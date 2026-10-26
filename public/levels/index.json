@@ -1,0 +1,68 @@
+{
+ "queens": {
+  "easy": 2085,
+  "medium": 806,
+  "hard": 1173,
+  "expert": 1381
+ },
+ "tango": {
+  "easy": 2035,
+  "medium": 812,
+  "hard": 1302,
+  "expert": 931
+ },
+ "zip": {
+  "easy": 2037,
+  "medium": 198,
+  "hard": 454,
+  "expert": 1499
+ },
+ "sudoku": {
+  "easy": 390,
+  "medium": 120,
+  "hard": 523,
+  "expert": 100
+ },
+ "shikaku": {
+  "easy": 3533,
+  "medium": 614,
+  "hard": 400,
+  "expert": 379
+ },
+ "pipes": {
+  "easy": 2778,
+  "medium": 1102,
+  "hard": 659,
+  "expert": 1262
+ },
+ "bridges": {
+  "easy": 2297,
+  "medium": 339,
+  "hard": 322,
+  "expert": 991
+ },
+ "lits": {
+  "easy": 1816,
+  "medium": 335,
+  "hard": 219,
+  "expert": 1044
+ },
+ "kami": {
+  "easy": 657,
+  "medium": 1440,
+  "hard": 1471,
+  "expert": 1171
+ },
+ "mind": {
+  "easy": 917,
+  "medium": 13,
+  "hard": 250,
+  "expert": 943
+ },
+ "sets": {
+  "easy": 2310,
+  "medium": 325,
+  "hard": 951,
+  "expert": 450
+ }
+}

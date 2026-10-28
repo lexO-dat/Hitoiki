@@ -2,7 +2,7 @@
 // GitHub Releases without reinstalling; only native changes need a new APK. On the web it reloads.
 import { Capacitor } from '@capacitor/core';
 
-const REPO = 'lexO-dat/puzzle-games';
+const REPO = 'lexO-dat/Hitoiki';
 export const APP_VERSION = __APP_VERSION__; // eslint-disable-line no-undef
 // Bump when the Android shell changes (new Capacitor plugin, permissions…): the app then asks for a new APK.
 export const NATIVE_VERSION = 3; // 2: Preferences, Filesystem and Share plugins; 3: exact alarms for reminders

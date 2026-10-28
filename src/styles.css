@@ -461,12 +461,13 @@ h3.section small { font-family: var(--sans); font-weight: 400; }
 }
 .nav button svg { width: 22px; height: 22px; transition: transform 0.35s var(--spring); }
 .nav button.on { color: var(--paper); font-weight: 700; }
-.nav button.on svg { transform: translateY(-1px) scale(1.08); }
+.nav button.on svg { transform: scale(1.06); }
 .nav button:active { transform: scale(0.94); }
 /* The active pill slides from icon to icon. */
 .nav-pill {
   position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 24px) / 4); border-radius: 18px; background: var(--ink);
-  transform: translateX(calc(var(--i) * (100% + 4px))); transition: transform 0.42s var(--spring);
+  /* Smooth glide with no overshoot: it always lands exactly under the icon. */
+  transform: translateX(calc(var(--i) * (100% + 4px))); transition: transform 0.36s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 /* Daily puzzle opened after its day */

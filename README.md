@@ -86,8 +86,6 @@ deshacer.
   - en Android se guarda además una copia nativa y un respaldo automático en `Documentos/Hitoiki/`
     que sobrevive a desinstalar la app;
   - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
-- **Firma de los APK**: el CI firma con la clave guardada en los secretos del repositorio
-  `PAUSA_KEYSTORE_BASE64` y `PAUSA_KEYSTORE_PASSWORD`, para que cada APK se instale sobre el anterior.
 
 ## Modos
 

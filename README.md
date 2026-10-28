@@ -154,8 +154,17 @@ Experiencia de uso:
   racha; lo resuelto fuera de su día no cuenta.
 - **Descansos**: cada 7 días de racha ganas un día de descanso (máximo 2). Si un día no juegas, se
   usa uno automáticamente y la racha sigue; se marca con una hoja en el calendario.
-- **Cuaderno**: racha, mejor racha, puzzles perfectos, un libro de sellos mensual con cada día
-  completado y los mejores tiempos por juego.
+- **Cuaderno**: racha, mejor racha, puzzles perfectos, el resumen de la semana, un libro de sellos
+  mensual con cada día completado, los logros y los mejores tiempos por juego.
+- **Sellos (logros)**: 17 sellos con su propio kanji (初 primer puzzle, 七 una semana de racha, 達
+  Experto, 揃 todos los juegos, 速 en 30 segundos…). Se calculan desde tu historial, así que lo ya
+  jugado cuenta; los nuevos se anuncian al resolver.
+- **Resumen semanal**: días sellados, puzzles, perfectos, récords, juego favorito y comparación con la
+  semana anterior. Aviso el domingo a las 20:00 y recordatorio en el inicio el domingo por la tarde y
+  el lunes.
+- **Compartir**: al resolver se genera una tarjeta (1080×1350) con el sello del juego, el tiempo, el
+  ensō del día y la racha, más un texto. En Android abre el menú de compartir del sistema.
+- **Widget de Android**: el ensō de hoy y la racha en la pantalla de inicio; tocarlo abre la app.
 - **Infinito**: niveles numerados sin fin para cada juego y dificultad; al resolver uno se pasa al siguiente.
 - **Niveles**: 44.834 niveles diseñados, organizados por juego, dificultad y colección, con progreso
   por nivel.

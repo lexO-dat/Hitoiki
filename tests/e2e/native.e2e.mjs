@@ -27,6 +27,7 @@ const bridge = (mode) => {
       { name: 'LocalNotifications', methods: methods(['schedule', 'getPending', 'cancel', 'checkPermissions', 'requestPermissions']) },
       { name: 'Haptics', methods: methods(['impact', 'notification']) },
       { name: 'App', methods: methods(['exitApp', 'addListener']) },
+      { name: 'HitoikiWidget', methods: methods(['refresh']) },
     ],
     nativePromise(plugin, method, opts) {
       window.__calls.push(`${plugin}.${method}`);
@@ -36,6 +37,7 @@ const bridge = (mode) => {
       if (method === 'getPending') return Promise.resolve({ notifications: [] });
       if (method === 'requestPermissions') window.__granted = true;
       if (method === 'checkPermissions' || method === 'requestPermissions') return Promise.resolve({ display: window.__granted ? 'granted' : 'prompt' });
+      if (method === 'set' && opts.key === 'widget') window.__widget = JSON.parse(opts.value);
       if (method === 'schedule') window.__scheduled = opts.notifications.map((n) => ({ id: n.id, at: new Date(n.schedule.at).getTime() }));
       return Promise.resolve({});
     },
@@ -58,6 +60,9 @@ for (const mode of ['hang', 'granted']) {
       const daily = scheduled.filter((n) => n.id >= 100 && n.id < 107).map((n) => new Date(n.at));
       assert.equal(daily.length, 7);
       assert.ok(daily.every((d) => d.getHours() === 0 && d.getMinutes() === 1), 'new puzzles at 00:01');
+      const widget = await p.evaluate(() => window.__widget);
+      assert.ok(calls.includes('HitoikiWidget.refresh'), 'widget refreshed');
+      assert.deepEqual(Object.keys(widget).sort(), ['date', 'done', 'streak', 'validThrough']);
       const away = scheduled.find((n) => n.id === 300);
       if (away) assert.ok(Math.abs(away.at - now - 8 * 3600e3) < 60e3, 'away reminder 8 hours later');
     }

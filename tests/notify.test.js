@@ -29,3 +29,11 @@ test('the away reminder is skipped when it would land next to the 00:01 one', ()
 test('nothing is scheduled when reminders are turned off', () => {
   assert.equal(plan(migrate({ settings: { notify: false } })).length, 0);
 });
+
+test('weekly summary on the coming Sunday at 20:00', () => {
+  const wk = (now) => plan(migrate({}), now).find((n) => n.id === 400).when;
+  const a = wk(new Date(2026, 9, 28, 10, 0)); // Wednesday
+  assert.deepEqual([a.getDay(), a.getHours(), a.getDate()], [0, 20, 1]);
+  const b = wk(new Date(2026, 10, 1, 21, 0)); // Sunday after 20:00 -> next Sunday
+  assert.equal(b.getDate(), 8);
+});

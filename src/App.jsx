@@ -15,6 +15,8 @@ import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
 import { askPermissionOnce, syncReminders } from './lib/notify.js';
 import { markAppReady } from './lib/updates.js';
+import { initAchievements } from './lib/achievements.js';
+import { syncWidget } from './lib/widget.js';
 import { Capacitor } from '@capacitor/core';
 
 const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean);
@@ -82,8 +84,12 @@ export default function App() {
   useEffect(() => {
     askPermissionOnce().catch(() => {});
     syncReminders().catch(() => {});
-    // Opening or leaving the app pushes the "8 hours away" reminder back.
-    const on = () => syncReminders().catch(() => {});
+    syncWidget();
+    // Opening or leaving the app pushes the "8 hours away" reminder back and refreshes the widget.
+    const on = () => {
+      syncReminders().catch(() => {});
+      syncWidget();
+    };
     document.addEventListener('visibilitychange', on);
     return () => document.removeEventListener('visibilitychange', on);
   }, [reminders]);
@@ -91,6 +97,7 @@ export default function App() {
   // Tell the live-update plugin this bundle started fine (otherwise it rolls back to the previous one).
   useEffect(() => {
     markAppReady().catch(() => {});
+    initAchievements();
   }, []);
 
   // Android back button: go back inside the app, close it from the home screen.

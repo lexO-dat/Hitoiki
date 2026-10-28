@@ -8,6 +8,7 @@ import Nav from './Nav.jsx';
 import Logo from './Logo.jsx';
 import Enso from './Enso.jsx';
 import Seal from './Seal.jsx';
+import { recapWeek, weekSummary } from '../lib/weekly.js';
 
 // What the day looks like, in a warm voice: one clear next step, and how close the streak is.
 function headline({ done, streak, rests, past }) {
@@ -112,6 +113,27 @@ export default function Home({ date, today, mode, setDate, setMode, navigate }) 
           </button>
         )}
       </section>
+
+      {!past &&
+        (() => {
+          const recap = recapWeek();
+          if (!recap) return null;
+          const w = weekSummary(s, recap);
+          return (
+            <button className="recap" onClick={() => navigate('/stats')}>
+              <span className="recap-kanji" aria-hidden="true">
+                週
+              </span>
+              <span>
+                <b>{recap === today ? 'Tu semana' : 'Tu semana pasada'}</b>
+                <small>
+                  {w.sealed} de 7 días sellados · {w.solved} puzzles{w.records ? ` · ${w.records} ${w.records === 1 ? 'récord' : 'récords'}` : ''}
+                </small>
+              </span>
+              <Arrow width="18" height="18" />
+            </button>
+          );
+        })()}
 
       <div className="weeknav">
         <button className="icon-btn" onClick={() => setDate(addDays(date, -7))} aria-label="Semana anterior">

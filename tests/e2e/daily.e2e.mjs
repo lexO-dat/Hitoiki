@@ -31,9 +31,11 @@ test('play from the hero, seal + day progress + next puzzle, then share', async 
   await p.waitForSelector('.day-progress');
   assert.equal(await p.textContent('.day-progress b'), '1 de 4 para tu racha');
   assert.ok(await p.$('.seal.stamp'));
+  assert.match(await p.textContent('.earned'), /Nuevo sello.*Primer respiro/, 'first achievement announced');
   assert.match(await p.textContent('.result-actions .btn.primary'), /^Siguiente: /);
   await p.click('text=Compartir');
-  await p.waitForSelector('.result-actions .muted');
+  // Wait for the final message ("Preparando imagen…" shows first, while the card is drawn).
+  await p.waitForFunction(() => /copiado|descargada/i.test(document.querySelector('.result-actions .muted')?.textContent ?? ''));
   assert.match(await p.evaluate(() => navigator.clipboard.readText()), /Hitoiki/);
   await p.click('.result-actions .btn.primary');
   await p.waitForSelector('.game-head');

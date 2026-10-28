@@ -7,6 +7,9 @@ import Thumb from './Thumb.jsx';
 import Seal from './Seal.jsx';
 import Enso from './Enso.jsx';
 import Nav from './Nav.jsx';
+import { achievements } from '../lib/achievements.js';
+import { recapWeek } from '../lib/weekly.js';
+import WeekCard from './WeekCard.jsx';
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -65,6 +68,35 @@ function StampBook({ s, restDays }) {
   );
 }
 
+function Achievements({ s }) {
+  const list = achievements(s);
+  const got = list.filter((a) => a.done).length;
+  return (
+    <>
+      <h3 className="section">
+        Sellos
+        <small className="muted">
+          {got} de {list.length}
+        </small>
+      </h3>
+      <div className="achievements">
+        {list.map((a) => (
+          <div key={a.id} className={`achievement${a.done ? ' done' : ''}`}>
+            <Seal kanji={a.kanji} size={46} color={a.done ? 'var(--shu)' : 'var(--ink-3)'} title={a.name} />
+            <b>{a.name}</b>
+            <small>{a.desc}</small>
+            {!a.done && a.goal > 1 && (
+              <span className="meter" aria-label={`${a.cur} de ${a.goal}`}>
+                <i style={{ width: `${(a.cur / a.goal) * 100}%` }} />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function Stats({ navigate }) {
   const s = useStore();
   const { streak, best, rests, restDays } = computeStreak(s);
@@ -120,7 +152,15 @@ export default function Stats({ navigate }) {
         </span>
       </div>
 
+      {(() => {
+        const recap = recapWeek();
+        const last = recap && recap !== todayKey();
+        return <WeekCard s={s} day={recap ?? todayKey()} title={last ? 'La semana pasada' : 'Esta semana'} />;
+      })()}
+
       <StampBook s={s} restDays={restDays} />
+
+      <Achievements s={s} />
 
       <h3 className="section">Por juego</h3>
       <div className="list gamestats">

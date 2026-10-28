@@ -8,11 +8,13 @@
 import { Capacitor } from '@capacitor/core';
 import { completedOn, computeStreak, STREAK_REQUIRED, store } from './storage.js';
 import { addDays, toKey } from './dates.js';
+import { weekSummary } from './weekly.js';
 
 const isNative = () => Capacitor.isNativePlatform();
 const DAYS_AHEAD = 7;
 const DAILY_BASE = 100; // ids 100..106: new puzzles at 00:01 for the next week
 const AWAY_ID = 300; // "8 hours away"
+const WEEKLY_ID = 400; // Sunday 20:00 weekly summary
 export const AWAY_HOURS = 8;
 const OLD_IDS = [200]; // evening streak reminder of earlier versions
 
@@ -73,6 +75,16 @@ export function plan(s = store.get(), now = new Date()) {
     const [title, body] = NEW_DAY[(Number(day.slice(8)) + i) % NEW_DAY.length];
     out.push({ id: DAILY_BASE + i - 1, title, body, when: at(day, 0, 1) });
   }
+  // Weekly summary: the coming Sunday at 20:00 (today if it is Sunday before 20:00).
+  const sunday = addDays(today, (7 - now.getDay()) % 7);
+  const weekly = at(sunday, 20) > now ? at(sunday, 20) : at(addDays(sunday, 7), 20);
+  const w = weekSummary(s, toKey(weekly));
+  out.push({
+    id: WEEKLY_ID,
+    title: 'Tu semana en Hitoiki 週',
+    body: w.solved ? `Sellaste ${w.sealed} de 7 días y resolviste ${w.solved} puzzles. Mira tu resumen.` : 'Mira tu resumen de la semana en el Cuaderno.',
+    when: weekly,
+  });
   const away = new Date(now.getTime() + AWAY_HOURS * 3600 * 1000);
   // No need for both within the same hour: the new-puzzles one already brings you back.
   if (!out.some((n) => Math.abs(n.when - away) < 3600 * 1000)) {
@@ -90,7 +102,7 @@ export async function syncReminders() {
   if (isNative()) {
     const ln = (await notificationsModule()).LocalNotifications;
     const pending = await ln.getPending();
-    const ids = [...new Set([...pending.notifications.map((n) => n.id), AWAY_ID, ...OLD_IDS])];
+    const ids = [...new Set([...pending.notifications.map((n) => n.id), AWAY_ID, WEEKLY_ID, ...OLD_IDS])];
     await ln.cancel({ notifications: ids.map((id) => ({ id })) });
     if (!list.length) return;
     if ((await ln.checkPermissions()).display !== 'granted') return;

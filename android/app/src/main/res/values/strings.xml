@@ -4,4 +4,8 @@
     <string name="title_activity_main">Hitoiki</string>
     <string name="package_name">cl.pausa.puzzles</string>
     <string name="custom_url_scheme">cl.pausa.puzzles</string>
+    <string name="widget_name">Hitoiki: hoy</string>
+    <string name="widget_label">HOY · 一息</string>
+    <string name="widget_title_default">Tu respiro de hoy</string>
+    <string name="widget_description">Tu progreso de hoy y tu racha</string>
 </resources>

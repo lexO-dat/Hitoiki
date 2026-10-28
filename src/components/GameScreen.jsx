@@ -2,14 +2,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { praise } from '../lib/daily.js';
 import { formatTime } from '../lib/dates.js';
 import { clearProgress, completedOn, computeStreak, gameOfKey, saveProgress, saveResult, store, STREAK_REQUIRED, useStore } from '../lib/storage.js';
-import { resultText, shareText } from '../lib/share.js';
+import { resultText, shareImage, shareText } from '../lib/share.js';
+import { renderResultCard } from '../lib/shareCard.js';
 import Seal from './Seal.jsx';
 import Enso from './Enso.jsx';
+import { markAchievementsSeen, newAchievements } from '../lib/achievements.js';
 import { todayKey } from '../lib/dates.js';
 import { vibrate } from '../lib/theme.js';
 import { sfx } from '../lib/sound.js';
 import Celebration from './Celebration.jsx';
 import { syncReminders } from '../lib/notify.js';
+import { syncWidget } from '../lib/widget.js';
 import { Arrow, Back, Bulb, Eraser, Help, Share, Undo } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 
@@ -61,13 +64,24 @@ function Result({ game, mode, subtitle, modeLabel, result, storageKey, onBack, o
   const dayDone = date ? Math.min(completedOn(s, date), STREAK_REQUIRED) : 0;
   const milestone = fresh && showStreak && dayDone === STREAK_REQUIRED && MILESTONES.includes(streak) ? streak : null;
 
+  // Seals earned with this solve, announced once.
+  const [earned] = useState(() => (fresh ? newAchievements() : []));
   useEffect(() => {
     if (fresh) sfx.stamp();
-  }, [fresh]);
+    if (earned.length) {
+      markAchievementsSeen(earned.map((a) => a.id));
+      setTimeout(() => sfx.streak(), 1700);
+    }
+  }, [fresh, earned]);
 
   const share = async () => {
-    const r = await shareText(resultText({ game, modeLabel, subtitle, result, streak: showStreak ? streak : 0 }));
-    setShared(r === 'copied' ? 'Copiado al portapapeles' : r === 'failed' ? 'No se pudo compartir' : '');
+    setShared('Preparando imagen…');
+    const st = showStreak ? streak : 0;
+    const text = resultText({ game, modeLabel, subtitle, result, streak: st });
+    const blob = await renderResultCard({ game, modeLabel, subtitle, result, streak: st, dayDone: showStreak ? dayDone : null }).catch(() => null);
+    const r = blob ? await shareImage(blob, text) : await shareText(text);
+    const msg = { copied: 'Texto copiado al portapapeles', downloaded: 'Imagen descargada y texto copiado', failed: 'No se pudo compartir' };
+    setShared(msg[r] ?? '');
   };
 
   return (
@@ -112,6 +126,16 @@ function Result({ game, mode, subtitle, modeLabel, result, storageKey, onBack, o
             </div>
           </div>
         )}
+        {earned.map((a) => (
+          <div key={a.id} className="earned" role="status">
+            <Seal kanji={a.kanji} size={44} stamp />
+            <div>
+              <small>Nuevo sello</small>
+              <b>{a.name}</b>
+              <span>{a.desc}</span>
+            </div>
+          </div>
+        ))}
         {milestone && (
           <div className="milestone" role="status">
             <b>¡{milestone} días seguidos!</b>
@@ -224,6 +248,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     const result = { ...meta.current };
     saveResult(storageKey, result);
     syncReminders().catch(() => {});
+    syncWidget();
     vibrate(store.get().settings.haptics, [20, 40, 20]);
     sfx.solve({ perfect: !result.hints && !result.mistakes });
     // This solve completed today's puzzles for the streak: play the streak motif after the cadence.

@@ -8,7 +8,7 @@ from pathlib import Path
 from fontTools import subset
 from fontTools.ttLib import TTFont
 
-KANJI = '一息角道冠管橋陽彩謎形組数済休続日月火水木金土今'
+KANJI = '一息角道冠管橋陽彩謎形組数済休続日月火水木金土今初三七百完達極揃全速朝夜無匠段週'
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / 'node_modules/@fontsource/shippori-mincho/files/shippori-mincho-japanese-700-normal.woff2'
 OUT = ROOT / 'src/fonts/hitoiki-kanji.woff2'

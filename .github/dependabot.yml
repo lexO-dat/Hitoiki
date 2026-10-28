@@ -1,0 +1,17 @@
+# Weekly update proposals: npm packages, Gradle (Android) dependencies and the GitHub Actions used by
+# the workflows (Dependabot also keeps pinned action versions current).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 5
+    groups:
+      capacitor: { patterns: ['@capacitor/*', '@capgo/*'] }
+  - package-ecosystem: gradle
+    directory: /android
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }

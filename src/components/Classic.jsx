@@ -73,7 +73,7 @@ export function ClassicHome({ navigate }) {
                   <span className="card-body">
                     <h4>{g.name}</h4>
                     <p>{total.toLocaleString('es')} niveles</p>
-                    <span className="meter" aria-label={`${solved} de ${total} resueltos`}>
+                    <span className="meter" role="progressbar" aria-label="Niveles resueltos" aria-valuenow={solved} aria-valuemin={0} aria-valuemax={total}>
                       <i style={{ width: `${Math.max(solved ? 2 : 0, (solved / total) * 100)}%` }} />
                     </span>
                   </span>

@@ -4,7 +4,8 @@
 //  3. Manual export / import of a .json file (web and Android).
 // All plugins are loaded lazily and every failure is swallowed: backups must never break the game.
 import { Capacitor } from '@capacitor/core';
-import { isEmpty, migrate, SCHEMA, store } from './storage.js';
+import { countsForDay, isEmpty, migrate, migrateReport, SCHEMA, store } from './storage.js';
+import { LIMITS } from './sanitize.js';
 
 const isNative = () => Capacitor.isNativePlatform();
 const PREF_KEY = 'pausa-store'; // internal key from the first release: keep it so old data is found
@@ -22,12 +23,21 @@ export function serialize(state = store.get()) {
   return JSON.stringify({ app: 'hitoiki', schema: SCHEMA, exportedAt: new Date().toISOString(), data: state });
 }
 
-export function parseBackup(text) {
-  const json = JSON.parse(text);
+// Parses and validates a backup. `report.dropped` counts damaged entries that were left out.
+export function parseBackup(text, report = {}) {
+  if (typeof text !== 'string' || text.length > LIMITS.importBytes) throw new Error('El archivo es demasiado grande para ser una copia de Hitoiki.');
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error('El archivo está dañado o no es una copia de Hitoiki.');
+  }
   // 'pausa' backups come from versions released before the rename; a raw store object is accepted too.
   const data = json?.app === 'hitoiki' || json?.app === 'pausa' ? json.data : json;
-  if (!data || typeof data !== 'object' || (!data.results && !data.settings)) throw new Error('El archivo no es una copia de Hitoiki.');
-  return migrate(data);
+  if (!data || typeof data !== 'object' || Array.isArray(data) || (!data.results && !data.settings)) throw new Error('El archivo no es una copia de Hitoiki.');
+  const { state, dropped } = migrateReport(data);
+  report.dropped = dropped;
+  return state;
 }
 
 // Union of both progress sets: nothing solved on either side is lost.
@@ -35,7 +45,14 @@ export function merge(current, incoming) {
   const out = migrate(current);
   for (const [k, v] of Object.entries(incoming.results)) {
     const cur = out.results[k];
-    if (!cur || (v.time ?? Infinity) < (cur.time ?? Infinity)) out.results[k] = v;
+    if (!cur) {
+      out.results[k] = v;
+      continue;
+    }
+    const best = (v.time ?? Infinity) < (cur.time ?? Infinity) ? v : cur;
+    const other = best === v ? cur : v;
+    // A daily puzzle solved on its own day keeps that credit even when the faster time came from a late solve.
+    out.results[k] = countsForDay(k, other) && !countsForDay(k, best) ? { ...best, solvedDay: other.solvedDay } : best;
   }
   for (const [k, v] of Object.entries(incoming.saves)) if (!out.results[k] && !out.saves[k]) out.saves[k] = v;
   out.tutorialsSeen = { ...incoming.tutorialsSeen, ...out.tutorialsSeen };
@@ -135,8 +152,9 @@ export async function exportBackup() {
 }
 
 // Manual import from a picked file; merges with the current progress.
-export async function importBackup(file) {
-  const incoming = parseBackup(await file.text());
+export async function importBackup(file, report = {}) {
+  if (file.size > LIMITS.importBytes) throw new Error('El archivo es demasiado grande para ser una copia de Hitoiki.');
+  const incoming = parseBackup(await file.text(), report);
   const merged = merge(store.get(), incoming);
   store.replace({ ...merged, updatedAt: Date.now() });
   return Object.keys(incoming.results).length;

@@ -11,7 +11,7 @@ import { getPuzzle, nextDaily } from './lib/daily.js';
 import { formatTime, longDate } from './lib/dates.js';
 import { useToday } from './lib/useToday.js';
 import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/levels.js';
-import { resultKey, store, useStore } from './lib/storage.js';
+import { resultKey, saveStatus, store, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
 import { askPermissionOnce, syncReminders } from './lib/notify.js';
@@ -20,6 +20,7 @@ import { initAchievements } from './lib/achievements.js';
 import { syncWidget } from './lib/widget.js';
 import { Capacitor } from '@capacitor/core';
 import Nav, { TABS } from './components/Nav.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean);
 
@@ -27,6 +28,27 @@ const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').f
 const tabOf = ([page, ...args]) =>
   !page ? '/' : page === 'inf' && !args.length ? '/inf' : page === 'lvl' && !args.length ? '/lvl' : page === 'stats' ? '/stats' : null;
 const depthOf = (r) => (tabOf(r) ? 0 : r.length);
+
+// In-progress boards that belong to a route: if the screen crashes, they are the likely cause.
+function savesOf(route) {
+  const [page, ...args] = route;
+  if (page === 'play' && args.length === 3) return { exact: resultKey(...args) };
+  if (page === 'inf' && args.length === 3) return { exact: `inf|${args[0]}|${args[1]}|${args[2]}` };
+  if (page === 'lvl' && args.length === 2) return { prefix: `lvl|${args[0]}|` };
+  return null;
+}
+
+function discardSaves(route) {
+  const target = savesOf(route);
+  if (!target) return false;
+  const keys = Object.keys(store.get().saves).filter((k) => (target.exact ? k === target.exact : k.startsWith(target.prefix)));
+  if (!keys.length) return false;
+  store.update((s) => {
+    keys.forEach((k) => delete s.saves[k]);
+    return s;
+  });
+  return true;
+}
 
 // Direction of a route change, for the page transition: sideways between tabs, rising into a screen.
 function direction(from, to) {
@@ -105,6 +127,7 @@ export default function App() {
   const reminders = useStore((s) => s.settings.notify);
   const [route, setRoute] = useState(parse);
   const [dir, setDir] = useState('none');
+  const saveFailed = useStore(() => saveStatus.failed());
 
   // Keep scheduled reminders in sync with settings, and refresh them whenever the app comes back.
   useEffect(() => {
@@ -294,9 +317,33 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className={`page enter-${dir}`} key={routeKey}>
-        {content}
-      </div>
+      {saveFailed && (
+        <div className="save-warning" role="alert">
+          No se pudo guardar tu progreso en este dispositivo. Libera espacio o exporta una copia en Ajustes.
+        </div>
+      )}
+      <main className={`page enter-${dir}`} key={routeKey}>
+        <ErrorBoundary
+          key={routeKey}
+          onError={() => discardSaves(route)}
+          fallback={(error, retry) => (
+            <div className="screen closed" role="alert">
+              <h1>Algo salió mal</h1>
+              <p className="lead">Esta pantalla tuvo un problema, pero tu progreso está a salvo.</p>
+              <div className="closed-actions">
+                <button className="btn primary" onClick={() => (navigate('/'), retry())}>
+                  Ir al inicio
+                </button>
+                <button className="btn" onClick={retry}>
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
+        >
+          {content}
+        </ErrorBoundary>
+      </main>
       {tab && <Nav current={tab} navigate={navigate} />}
     </div>
   );

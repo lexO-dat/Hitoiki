@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 const REPO = 'lexO-dat/Hitoiki';
 export const APP_VERSION = __APP_VERSION__; // eslint-disable-line no-undef
 // Bump when the Android shell changes (new Capacitor plugin, permissions…): the app then asks for a new APK.
-export const NATIVE_VERSION = 5; // 2: Preferences, Filesystem and Share plugins; 3: exact alarms for reminders; 4: home screen widget; 5: portrait only
+export const NATIVE_VERSION = 6; // 2: Preferences, Filesystem and Share plugins; 3: exact alarms for reminders; 4: home screen widget; 5: portrait only; 6: release build (not debuggable)
 
 const isNative = () => Capacitor.isNativePlatform();
 

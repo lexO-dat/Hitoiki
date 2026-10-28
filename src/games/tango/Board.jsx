@@ -35,7 +35,7 @@ export default forwardRef(function TangoBoard({ puzzle, saved, onChange, onSolve
 
   return (
     <>
-      <div className="tgrid" style={{ width, gridTemplateColumns: `repeat(${n}, ${cell}px)` }} role="grid" aria-label="Tablero sol y luna">
+      <div className="tgrid" style={{ width, gridTemplateColumns: `repeat(${n}, ${cell}px)` }} role="group" aria-label="Tablero sol y luna">
         {b.state.map((row, r) =>
           row.map((v, c) => (
             <button

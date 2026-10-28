@@ -78,7 +78,7 @@ export default forwardRef(function QueensBoard({ puzzle, saved, onChange, onSolv
         if (drag.current?.moved) b.end();
         drag.current = null;
       }}
-      role="grid"
+      role="group"
       aria-label="Tablero de coronas"
     >
       {region.map((row, r) =>

@@ -61,7 +61,7 @@ export default forwardRef(function SudokuBoard({ puzzle, saved, onChange, onSolv
   const sc = sel % 9;
   return (
     <div className="sudoku">
-      <div className="sgrid" style={{ width, gridTemplateColumns: `repeat(9, ${cell}px)` }} role="grid" aria-label="Sudoku">
+      <div className="sgrid" style={{ width, gridTemplateColumns: `repeat(9, ${cell}px)` }} role="group" aria-label="Sudoku">
         {values.map((v, i) => {
           const r = Math.floor(i / 9);
           const c = i % 9;

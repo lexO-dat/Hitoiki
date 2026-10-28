@@ -9,6 +9,12 @@ import { Capacitor } from '@capacitor/core';
 
 const setSetting = (k, v) => store.update((s) => ({ ...s, settings: { ...s.settings, [k]: v } }));
 
+// Defined at module level: a component declared inside another one is a new type on every render,
+// so React would rebuild the button each time (losing focus and the sliding animation).
+function Switch({ k, label, checked, onChange }) {
+  return <button className="switch" role="switch" aria-checked={checked} aria-label={label} onClick={onChange ?? (() => setSetting(k, !checked))} />;
+}
+
 export default function Settings({ navigate }) {
   const settings = useStore((s) => s.settings);
   const [notice, setNotice] = useState('');
@@ -19,9 +25,6 @@ export default function Settings({ navigate }) {
       setNotice('');
     } else setNotice('Activa las notificaciones de Hitoiki en los ajustes del teléfono.');
   };
-  const Switch = ({ k }) => (
-    <button className="switch" role="switch" aria-checked={!!settings[k]} onClick={() => setSetting(k, !settings[k])} />
-  );
   const reset = () => {
     if (confirm('¿Borrar todo el progreso, rachas y resultados?')) {
       store.update((s) => ({ ...s, results: {}, saves: {}, tutorialsSeen: {} }));
@@ -57,17 +60,17 @@ export default function Settings({ navigate }) {
       <h3 className="section">Juego</h3>
       <div className="list">
         <div className="row">
-          Mostrar cronómetro <Switch k="showTimer" />
+          Mostrar cronómetro <Switch k="showTimer" label="Mostrar cronómetro" checked={!!settings.showTimer} />
         </div>
         <div className="row">
-          Vibración <Switch k="haptics" />
+          Vibración <Switch k="haptics" label="Vibración" checked={!!settings.haptics} />
         </div>
         <div className="row">
-          Sonidos <Switch k="sound" />
+          Sonidos <Switch k="sound" label="Sonidos" checked={!!settings.sound} />
         </div>
         {settings.sound && (
           <div className="row">
-            Música ambiente <Switch k="music" />
+            Música ambiente <Switch k="music" label="Música ambiente" checked={!!settings.music} />
           </div>
         )}
         {settings.sound && (
@@ -101,7 +104,7 @@ export default function Settings({ navigate }) {
             <br />
             <small className="muted">A las 00:01 cuando hay puzzles nuevos, y si llevas {AWAY_HOURS} horas sin entrar.</small>
           </span>
-          <button className="switch" role="switch" aria-checked={settings.notify !== false} onClick={toggleReminders} />
+          <Switch label="Recordatorios" checked={settings.notify !== false} onChange={toggleReminders} />
         </div>
         {settings.notify !== false && (
           <div className="row">
@@ -142,7 +145,8 @@ export default function Settings({ navigate }) {
               onChange={(e) => {
                 const f = e.target.files?.[0];
                 e.target.value = '';
-                if (f) importBackup(f).then((n) => setNotice(`Copia restaurada: ${n} puzzles resueltos.`), (err) => setNotice(err.message));
+                const report = {};
+                if (f) importBackup(f, report).then((n) => setNotice(`Copia restaurada: ${n} puzzles resueltos.${report.dropped ? ` Se omitieron ${report.dropped} entradas dañadas.` : ''}`), (err) => setNotice(err.message));
               }}
             />
           </label>

@@ -197,7 +197,7 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
       onPointerUp={up}
       onPointerCancel={up}
       onLostPointerCapture={up}
-      role="grid"
+      role="group"
       aria-label="Tablero de ruta"
     >
       {cells}

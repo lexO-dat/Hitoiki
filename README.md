@@ -88,11 +88,24 @@ deshacer.
 - **Actualizar desde la app**: Ajustes → Actualizaciones → Buscar. En Android descarga el paquete
   web nuevo desde GitHub Releases y lo aplica sin reinstalar; si la versión trae cambios nativos,
   ofrece descargar el APK. En la web detecta un despliegue nuevo y recarga.
+- **Datos dañados no rompen la app**: todo lo que entra (almacenamiento, copia nativa, archivo
+  importado) se valida (`src/lib/sanitize.js`): lo dañado se repara o se descarta y se cuenta, un
+  tablero guardado que falla se reinicia solo, y si el guardado completo es ilegible se aparta en lugar
+  de borrarse. Si el dispositivo no deja guardar, la app avisa.
+- **La racha no depende de la zona horaria**: cada resultado guarda el día local en que se resolvió.
 - **Tu progreso nunca se pierde al actualizar**:
   - el formato de guardado está versionado y cada versión migra los datos antiguos;
   - en Android se guarda además una copia nativa y un respaldo automático en `Documentos/Hitoiki/`
     que sobrevive a desinstalar la app;
   - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
+
+## Seguridad
+
+- El APK publicado es de **release** (no depurable), firmado con la clave del proyecto, que vive sólo en
+  los secretos del repositorio.
+- La compilación corre sin permiso de escritura; sólo el último paso (publicar) puede crear versiones.
+- Las dependencias se vigilan (`npm audit` sin hallazgos) y Dependabot propone actualizaciones.
+- No hay cuentas, anuncios ni analítica: la única conexión es la consulta de actualizaciones a GitHub.
 
 ## Versiones
 

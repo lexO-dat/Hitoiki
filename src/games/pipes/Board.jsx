@@ -67,7 +67,7 @@ export default forwardRef(function PipesBoard({ puzzle, saved, onChange, onSolve
   }, []);
 
   return (
-    <div className="pgrid" style={{ width, gridTemplateColumns: `repeat(${w}, ${cell}px)` }} role="grid" aria-label="Tablero de tuberías">
+    <div className="pgrid" style={{ width, gridTemplateColumns: `repeat(${w}, ${cell}px)` }} role="group" aria-label="Tablero de tuberías">
       {b.state.map((row, r) =>
         row.map((m, c) => (
           <PipeCell

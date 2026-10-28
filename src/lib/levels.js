@@ -1,4 +1,5 @@
 import { createRng } from './rng.js';
+import { uniqueIds } from './levelIds.js';
 import { GAME_BY_ID } from '../data/games.js';
 
 // Level packs live in public/levels/*.json and are loaded on demand.
@@ -26,7 +27,7 @@ export const loadIndex = () => getJson('index.json');
 
 export async function loadLevels(gameId) {
   const data = await getJson(`${gameId}.json`);
-  return data.levels;
+  return uniqueIds(data.levels);
 }
 
 // Convert stored records into the exact puzzle shape each Board expects.

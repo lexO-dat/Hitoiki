@@ -21,21 +21,28 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# No permission by default. The build runs code from dependencies (npm, Gradle) and sees the signing
+# key, so it only gets read access; just the final publish job can write releases.
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   apk:
     # ubuntu-24.04 images ship with the Android SDK preinstalled ($ANDROID_HOME).
     runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0 # tags and history: version number and release notes
 
       - name: Version
+        id: version
         run: |
           scripts/next-version.sh | tee -a "$GITHUB_ENV"
+          . <(scripts/next-version.sh)
+          echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v5
         with:
@@ -58,6 +65,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Unit tests in other timezones (streaks must not depend on them)
+        run: npm run test:tz
+
       - name: End-to-end tests (all games, daily loop, Android bridge, layout)
         run: |
           npx playwright install --with-deps chromium
@@ -77,13 +87,13 @@ jobs:
             echo "::warning::PAUSA_KEYSTORE_BASE64 secret not set: APK signed with a throwaway debug key"
           fi
 
-      - name: Build debug APK
+      - name: Build release APK
         working-directory: android
         env:
           PAUSA_KEYSTORE_PASSWORD: ${{ secrets.PAUSA_KEYSTORE_PASSWORD }}
         run: |
           # On failure, surface Gradle's own error summary as a job annotation (readable without logs access).
-          if ! ./gradlew assembleDebug --no-daemon > gradle.log 2>&1; then
+          if ! ./gradlew assembleRelease --no-daemon > gradle.log 2>&1; then
             tail -n 60 gradle.log
             msg=$( (sed -n '/What went wrong/,/Try:/p' gradle.log; grep -E '^e: |error:|Duplicate class|Could not resolve' gradle.log) | head -n 40 | sed ':a;N;$!ba;s/\n/%0A/g')
             echo "::error title=Gradle build failed::${msg:-see log}"
@@ -92,7 +102,7 @@ jobs:
 
       - name: Package APK and web bundle
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk "Hitoiki-$APP_VERSION.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "Hitoiki-$APP_VERSION.apk"
           (cd dist && zip -qr "../web-$APP_VERSION.zip" .)
           NATIVE=$(grep -oP 'NATIVE_VERSION = \K[0-9]+' src/lib/updates.js)
           SHA=$(sha256sum "web-$APP_VERSION.zip" | cut -d' ' -f1)
@@ -110,10 +120,24 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Hitoiki-apk
+          name: release-files
+          if-no-files-found: error
           path: |
             Hitoiki-*.apk
             web-*.zip
+            release-notes.md
+
+  publish:
+    needs: apk
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # the only job allowed to create the release and its tag
+    env:
+      APP_VERSION: ${{ needs.apk.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
 
       - name: Publish release
         uses: softprops/action-gh-release@v2

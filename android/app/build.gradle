@@ -37,7 +37,9 @@ android {
             if (hasPausaKey) signingConfig = signingConfigs.pausa
         }
         release {
-            if (hasPausaKey) signingConfig = signingConfigs.pausa
+            // Published APKs are release builds (not debuggable). Without our key (forks, local builds)
+            // they are signed with the debug key so they can still be installed for testing.
+            signingConfig = hasPausaKey ? signingConfigs.pausa : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

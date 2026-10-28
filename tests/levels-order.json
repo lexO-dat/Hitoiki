@@ -1,0 +1,46 @@
+{
+  "shikaku": {
+    "count": 4926,
+    "hash": "205e2e82e3d0122d"
+  },
+  "zip": {
+    "count": 4188,
+    "hash": "0ea0ce9144ce8401"
+  },
+  "queens": {
+    "count": 5445,
+    "hash": "88abd91d2021c15f"
+  },
+  "pipes": {
+    "count": 5801,
+    "hash": "3cb1d95c87a9d91d"
+  },
+  "bridges": {
+    "count": 3949,
+    "hash": "9b85f53b8dff6d6d"
+  },
+  "tango": {
+    "count": 5080,
+    "hash": "dcedc5970470a86a"
+  },
+  "kami": {
+    "count": 4739,
+    "hash": "32b58cac33782860"
+  },
+  "mind": {
+    "count": 2123,
+    "hash": "87cec789cd0e5b62"
+  },
+  "lits": {
+    "count": 3414,
+    "hash": "e20e744ca4e0c908"
+  },
+  "sets": {
+    "count": 4036,
+    "hash": "a9e5eeb82ef336fd"
+  },
+  "sudoku": {
+    "count": 1133,
+    "hash": "16898732ec712410"
+  }
+}

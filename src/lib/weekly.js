@@ -1,7 +1,7 @@
 // Weekly summary (Monday to Sunday): sealed days, puzzles, perfect games, records and favorite game,
 // compared with the week before.
 import { GAME_IDS } from '../data/ids.js';
-import { addDays, fromKey, toKey, weekDays } from './dates.js';
+import { addDays, toKey, weekDays } from './dates.js';
 import { completedOn, gameOfKey, STREAK_REQUIRED } from './storage.js';
 
 // Solves that beat the player's previous best time for that game (no hints; the first ever doesn't count).
@@ -13,7 +13,8 @@ function recordTimes(s) {
     .sort((a, b) => a[1].solvedAt - b[1].solvedAt);
   for (const [k, v] of list) {
     const g = gameOfKey(k);
-    if (best[g] !== undefined && v.time < best[g]) out.push(v.solvedAt);
+    // The day of each record, as fixed when it was solved.
+    if (best[g] !== undefined && v.time < best[g]) out.push(v.solvedDay ?? toKey(new Date(v.solvedAt)));
     best[g] = Math.min(best[g] ?? Infinity, v.time);
   }
   return out;
@@ -21,9 +22,8 @@ function recordTimes(s) {
 
 export function weekSummary(s, anyDayOfWeek) {
   const days = weekDays(anyDayOfWeek);
-  const from = fromKey(days[0]).getTime();
-  const to = fromKey(addDays(days[6], 1)).getTime();
-  const inWeek = Object.entries(s.results).filter(([, v]) => v.solvedAt >= from && v.solvedAt < to);
+  // By the day each puzzle was solved on (fixed when it was solved), so a timezone change can't move it.
+  const inWeek = Object.entries(s.results).filter(([, v]) => days.includes(v.solvedDay ?? toKey(new Date(v.solvedAt))));
   const perGame = {};
   for (const [k] of inWeek) perGame[gameOfKey(k)] = (perGame[gameOfKey(k)] ?? 0) + 1;
   const favorite = GAME_IDS.filter((g) => perGame[g]).sort((a, b) => perGame[b] - perGame[a])[0] ?? null;
@@ -33,7 +33,7 @@ export function weekSummary(s, anyDayOfWeek) {
     sealed: days.filter((d) => completedOn(s, d) >= STREAK_REQUIRED).length,
     solved: inWeek.length,
     perfect: inWeek.filter(([, v]) => !v.hints && !v.mistakes).length,
-    records: recordTimes(s).filter((t) => t >= from && t < to).length,
+    records: recordTimes(s).filter((d) => days.includes(d)).length,
     favorite,
     fastest: fastest ? { game: gameOfKey(fastest[0]), time: fastest[1].time } : null,
   };

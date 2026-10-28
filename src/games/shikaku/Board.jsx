@@ -59,7 +59,7 @@ export default forwardRef(function ShikakuBoard({ puzzle, saved, onChange, onSol
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={() => setDrag(null)}
-      role="grid"
+      role="group"
       aria-label="Tablero shikaku"
     >
       <svg width={width} height={height}>

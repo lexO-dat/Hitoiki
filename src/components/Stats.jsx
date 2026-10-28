@@ -85,7 +85,7 @@ function Achievements({ s }) {
             <b>{a.name}</b>
             <small>{a.desc}</small>
             {!a.done && a.goal > 1 && (
-              <span className="meter" aria-label={`${a.cur} de ${a.goal}`}>
+              <span className="meter" role="progressbar" aria-label={a.name} aria-valuenow={a.cur} aria-valuemin={0} aria-valuemax={a.goal}>
                 <i style={{ width: `${(a.cur / a.goal) * 100}%` }} />
               </span>
             )}

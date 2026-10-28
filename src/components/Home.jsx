@@ -58,7 +58,9 @@ export default function Home({ date, today, mode, setDate, setMode, navigate }) 
   return (
     <div className="screen with-nav home">
       <header className="topbar home-bar">
-        <Logo size={30} />
+        <h1 className="brand">
+          <Logo size={30} />
+        </h1>
         <div className="right">
           <button className={`streak-chip${done >= STREAK_REQUIRED && !past ? ' lit' : ''}`} onClick={() => navigate('/stats')} aria-label={`Racha de ${streak} días. Ver estadísticas`}>
             <Flame width="18" height="18" />

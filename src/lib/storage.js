@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { addDays, todayKey, toKey } from './dates.js';
+import { sanitizeState } from './sanitize.js';
 
 // Storage key and schema. NEVER rename the key: updates must always find previous data.
 // Format changes go through SCHEMA + migrate(), so old saves are upgraded instead of discarded.
@@ -16,34 +17,56 @@ const defaults = {
   updatedAt: 0,
 };
 
-// Upgrade any older (or partial) saved object to the current schema without losing fields.
+// Upgrade any older (or partial) saved object to the current schema, validating everything on the
+// way (see sanitize.js): damaged entries are repaired or dropped, never allowed to crash a screen.
 export function migrate(raw) {
+  return migrateReport(raw).state;
+}
+
+export function migrateReport(raw) {
   const data = raw && typeof raw === 'object' ? { ...raw } : {};
-  const from = Number(data.schema) || 1;
   // v1 -> v2: added schema/updatedAt; everything else is unchanged.
-  if (from < 2) data.updatedAt = data.updatedAt || Date.now();
-  const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
-  return {
-    ...structuredClone(defaults),
-    ...data,
-    schema: SCHEMA,
-    settings: { ...defaults.settings, ...obj(data.settings) },
-    results: obj(data.results),
-    saves: obj(data.saves),
-    tutorialsSeen: obj(data.tutorialsSeen),
-  };
+  if ((Number(data.schema) || 1) < 2) data.updatedAt = data.updatedAt || Date.now();
+  return sanitizeState(data, defaults);
 }
 
 export const isEmpty = (s) => !Object.keys(s.results).length && !Object.keys(s.saves).length;
 
-function read() {
+// Unreadable saved data is not overwritten and lost: it is set aside under another key (once), so it
+// can still be recovered, and the app starts clean (the native mirror restores it in the background).
+function quarantine(raw) {
   try {
-    const raw = localStorage.getItem(KEY);
-    return raw ? migrate(JSON.parse(raw)) : structuredClone(defaults);
+    if (raw && raw.length < 3_000_000 && !localStorage.getItem(`${KEY}:corrupt`)) localStorage.setItem(`${KEY}:corrupt`, raw);
   } catch {
+    // nothing else to do
+  }
+}
+
+function read() {
+  let raw = null;
+  try {
+    raw = localStorage.getItem(KEY);
+    if (!raw) return structuredClone(defaults);
+    const { state: clean, dropped, repaired } = migrateReport(JSON.parse(raw));
+    // Old results get their fixed day, damaged entries are removed: persist the repaired copy once.
+    if (dropped || repaired) {
+      quarantine(raw);
+      try {
+        localStorage.setItem(KEY, JSON.stringify(clean));
+      } catch {
+        // keep it in memory
+      }
+    }
+    return clean;
+  } catch {
+    quarantine(raw);
     return structuredClone(defaults);
   }
 }
+
+// Set when the browser refused a write (storage full or blocked): the app shows a warning.
+let saveFailed = false;
+export const saveStatus = { failed: () => saveFailed };
 
 let state = read();
 const listeners = new Set();
@@ -53,8 +76,10 @@ function write(next, { touch = true } = {}) {
   state = touch ? { ...next, updatedAt: Date.now() } : next;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
+    saveFailed = false;
   } catch {
-    // storage full or blocked: keep in memory (native mirror still gets it)
+    // storage full or blocked: keep in memory (the native mirror still gets it) and warn the player
+    saveFailed = true;
   }
   listeners.forEach((l) => l());
   writeHooks.forEach((h) => h(state));
@@ -91,7 +116,7 @@ export const resultKey = (date, mode, game) => `${date}|${mode}|${game}`;
 export function saveResult(k, result) {
   store.update((s) => {
     const prev = s.results[k];
-    s.results[k] = prev && prev.time <= result.time ? prev : { ...result, solvedAt: Date.now() };
+    s.results[k] = prev && prev.time <= result.time ? prev : { ...result, solvedAt: Date.now(), solvedDay: todayKey() };
     delete s.saves[k];
     return s;
   });
@@ -115,8 +140,10 @@ export function clearProgress(k) {
 // A daily puzzle only counts for its day when it was solved on that same day: daily puzzles cannot be
 // played afterwards, and anything solved late (before that rule existed) never adds to the streak.
 export function countsForDay(key, result) {
-  const date = key.split('|')[0];
-  return Boolean(result?.solvedAt) && toKey(new Date(result.solvedAt)) === date;
+  // `solvedDay` is the local date at the moment of solving; it doesn't move if the timezone changes.
+  if (!result) return false;
+  const day = result.solvedDay ?? (result.solvedAt ? toKey(new Date(result.solvedAt)) : null);
+  return day === key.split('|')[0];
 }
 
 export function completedOn(s, date) {

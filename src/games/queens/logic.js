@@ -124,7 +124,10 @@ export function generate(rng, mode = 'standard') {
   const [lo, hi] = SIZE[mode] ?? SIZE.standard;
   const n = rng.int(lo, hi);
   let best = null;
-  for (let attempt = 0; attempt < 60; attempt++) {
+  // The first 60 attempts are the ones every seed has always used (so existing daily puzzles don't
+  // change). A seed that fails all of them used to return an unverified board with several solutions;
+  // it now keeps searching, deterministically, until it finds a valid one.
+  for (let attempt = 0; attempt < 600; attempt++) {
     const cols = placement(n, rng);
     const region = growRegions(n, cols, rng);
     if (repair(n, region, cols, rng)) return { n, region, solution: cols };

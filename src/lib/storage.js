@@ -1,22 +1,45 @@
 import { useSyncExternalStore } from 'react';
 import { addDays, todayKey } from './dates.js';
 
-const KEY = 'logica-diaria:v1';
+// Storage key and schema. NEVER rename the key: updates must always find previous data.
+// Format changes go through SCHEMA + migrate(), so old saves are upgraded instead of discarded.
+export const KEY = 'logica-diaria:v1';
+export const SCHEMA = 2;
 export const STREAK_REQUIRED = 4; // puzzles per day that keep the streak alive
 
 const defaults = {
+  schema: SCHEMA,
   settings: { theme: 'system', showTimer: true, haptics: true, sound: true, volume: 0.7, reminders: false, reminderHour: 19 },
   results: {}, // `${date}|${mode}|${game}` -> { time, hints, mistakes, solvedAt }
   saves: {}, // in-progress board state, same key
   tutorialsSeen: {},
+  updatedAt: 0,
 };
+
+// Upgrade any older (or partial) saved object to the current schema without losing fields.
+export function migrate(raw) {
+  const data = raw && typeof raw === 'object' ? { ...raw } : {};
+  const from = Number(data.schema) || 1;
+  // v1 -> v2: added schema/updatedAt; everything else is unchanged.
+  if (from < 2) data.updatedAt = data.updatedAt || Date.now();
+  const obj = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+  return {
+    ...structuredClone(defaults),
+    ...data,
+    schema: SCHEMA,
+    settings: { ...defaults.settings, ...obj(data.settings) },
+    results: obj(data.results),
+    saves: obj(data.saves),
+    tutorialsSeen: obj(data.tutorialsSeen),
+  };
+}
+
+export const isEmpty = (s) => !Object.keys(s.results).length && !Object.keys(s.saves).length;
 
 function read() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return structuredClone(defaults);
-    const parsed = JSON.parse(raw);
-    return { ...structuredClone(defaults), ...parsed, settings: { ...defaults.settings, ...parsed.settings } };
+    return raw ? migrate(JSON.parse(raw)) : structuredClone(defaults);
   } catch {
     return structuredClone(defaults);
   }
@@ -24,15 +47,17 @@ function read() {
 
 let state = read();
 const listeners = new Set();
+const writeHooks = new Set();
 
-function write(next) {
-  state = next;
+function write(next, { touch = true } = {}) {
+  state = touch ? { ...next, updatedAt: Date.now() } : next;
   try {
     localStorage.setItem(KEY, JSON.stringify(state));
   } catch {
-    // storage full or blocked: keep in memory
+    // storage full or blocked: keep in memory (native mirror still gets it)
   }
   listeners.forEach((l) => l());
+  writeHooks.forEach((h) => h(state));
 }
 
 export const store = {
@@ -43,6 +68,15 @@ export const store = {
   },
   update(fn) {
     write(fn(structuredClone(state)));
+  },
+  // Replace everything (restore/import). Data is migrated first.
+  replace(data) {
+    write(migrate(data), { touch: false });
+  },
+  // Called after every write; used by the durable backups in backup.js.
+  onWrite(h) {
+    writeHooks.add(h);
+    return () => writeHooks.delete(h);
   },
 };
 

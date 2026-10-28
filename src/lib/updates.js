@@ -5,7 +5,7 @@ import { Capacitor } from '@capacitor/core';
 const REPO = 'lexO-dat/puzzle-games';
 export const APP_VERSION = __APP_VERSION__; // eslint-disable-line no-undef
 // Bump when the Android shell changes (new Capacitor plugin, permissions…): the app then asks for a new APK.
-export const NATIVE_VERSION = 1;
+export const NATIVE_VERSION = 2; // 2: Preferences, Filesystem and Share plugins
 
 const isNative = () => Capacitor.isNativePlatform();
 

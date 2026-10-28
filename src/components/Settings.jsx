@@ -4,6 +4,8 @@ import { sfx } from '../lib/sound.js';
 import { useState } from 'react';
 import { ensurePermission, testNotification } from '../lib/notify.js';
 import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
+import { exportBackup, importBackup } from '../lib/backup.js';
+import { Capacitor } from '@capacitor/core';
 
 const setSetting = (k, v) => store.update((s) => ({ ...s, settings: { ...s.settings, [k]: v } }));
 
@@ -114,10 +116,41 @@ export default function Settings({ navigate }) {
           </>
         )}
       </div>
-      {notice && <p className="footnote">{notice}</p>}
       <Updates />
-      <h3 className="section">Datos</h3>
+      <h3 className="section">Tus datos</h3>
       <div className="list">
+        <div className="row">
+          <span>
+            Copia de seguridad
+            <br />
+            <small className="muted">
+              {Capacitor.isNativePlatform() ? 'Automática en Documentos/Pausa. También puedes exportarla.' : 'Descarga un archivo con todo tu progreso.'}
+            </small>
+          </span>
+          <button className="btn" onClick={() => exportBackup().then((f) => setNotice(`Copia guardada: ${f}`), (e) => setNotice(`No se pudo exportar: ${e.message}`))}>
+            Exportar
+          </button>
+        </div>
+        <div className="row">
+          <span>
+            Restaurar copia
+            <br />
+            <small className="muted">Se combina con tu progreso actual; no se pierde nada.</small>
+          </span>
+          <label className="btn">
+            Importar
+            <input
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = '';
+                if (f) importBackup(f).then((n) => setNotice(`Copia restaurada: ${n} puzzles resueltos.`), (err) => setNotice(err.message));
+              }}
+            />
+          </label>
+        </div>
         <div className="row">
           Borrar progreso
           <button className="btn" onClick={reset}>
@@ -125,6 +158,7 @@ export default function Settings({ navigate }) {
           </button>
         </div>
       </div>
+      {notice && <p className="footnote">{notice}</p>}
       <p className="footnote">Pausa · v{APP_VERSION} · Todo se guarda en este dispositivo.</p>
     </div>
   );

@@ -57,7 +57,14 @@ jobs:
         working-directory: android
         env:
           PAUSA_KEYSTORE_PASSWORD: ${{ secrets.PAUSA_KEYSTORE_PASSWORD }}
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          # On failure, surface Gradle's own error summary as a job annotation (readable without logs access).
+          if ! ./gradlew assembleDebug --no-daemon > gradle.log 2>&1; then
+            tail -n 60 gradle.log
+            msg=$( (sed -n '/What went wrong/,/Try:/p' gradle.log; grep -E '^e: |error:|Duplicate class|Could not resolve' gradle.log) | head -n 40 | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Gradle build failed::${msg:-see log}"
+            exit 1
+          fi
 
       - name: Package APK and web bundle
         run: |

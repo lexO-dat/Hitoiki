@@ -10,4 +10,9 @@ import '@fontsource/ibm-plex-mono/latin-600.css';
 import './styles.css';
 import './games/games.css';
 
-createRoot(document.getElementById('root')).render(<App />);
+import { initBackups } from './lib/backup.js';
+
+// Restore saved progress from the durable copies (Android) before the first render.
+initBackups()
+  .catch(() => {})
+  .finally(() => createRoot(document.getElementById('root')).render(<App />));

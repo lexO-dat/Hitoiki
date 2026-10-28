@@ -1,4 +1,4 @@
-# Hitoiki 一息 · puzzles diarios
+# Hitoiki 一 puzzles diarios
 
 <img src="public/icons/icon-512.png" width="96" alt="Hitoiki" />
 

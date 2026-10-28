@@ -44,6 +44,7 @@ export async function checkForUpdate() {
     const rel = await res.json();
     const version = rel.tag_name.replace(/^v/, '');
     if (!isNewer(version, APP_VERSION)) return { status: 'latest', version };
+    // The marker keeps its original name so APKs released before the rename still understand it.
     const native = Number(/pausa-native:\s*(\d+)/.exec(rel.body ?? '')?.[1] ?? NATIVE_VERSION);
     const asset = (re) => rel.assets.find((a) => re.test(a.name))?.browser_download_url;
     const notes = (rel.body ?? '').replace(/<!--[\s\S]*?-->/g, '').trim();

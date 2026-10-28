@@ -1,7 +1,7 @@
 {
-  "name": "Pausa · puzzles diarios",
-  "short_name": "Pausa",
-  "description": "Once puzzles lógicos para una pausa tranquila cada día.",
+  "name": "Hitoiki · puzzles diarios",
+  "short_name": "Hitoiki",
+  "description": "Once puzzles lógicos para tomarte un respiro (一息) cada día.",
   "lang": "es",
   "start_url": "./",
   "scope": "./",

@@ -243,3 +243,4 @@ table.games th { font-family: var(--serif); font-weight: 600; font-size: 14px; }
 .update-row { display: block; }
 .update { display: flex; flex-direction: column; gap: 8px; }
 .update .bar { max-width: none; }
+.logo-kanji { font-style: normal; font-weight: 500; font-family: "Hiragino Mincho ProN", "Noto Serif JP", "Noto Serif CJK JP", serif; font-size: 13px; color: var(--text-2); letter-spacing: 1px; align-self: flex-end; margin-bottom: 4px; }

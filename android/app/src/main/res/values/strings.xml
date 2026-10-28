@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Pausa</string>
-    <string name="title_activity_main">Pausa</string>
+    <string name="app_name">Hitoiki</string>
+    <string name="title_activity_main">Hitoiki</string>
     <string name="package_name">cl.pausa.puzzles</string>
     <string name="custom_url_scheme">cl.pausa.puzzles</string>
 </resources>

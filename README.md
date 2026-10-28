@@ -1,6 +1,8 @@
-# Pausa · puzzles diarios
+# Hitoiki 一息 · puzzles diarios
 
-<img src="public/icons/icon-512.png" width="96" alt="Pausa" />
+<img src="public/icons/icon-512.png" width="96" alt="Hitoiki" />
+
+*Hitoiki* (一息) significa "un respiro" en japonés: un ratito tranquilo de lógica cada día.
 
 Colección de puzzles lógicos diarios hecha en React. Once juegos, tres modos de juego, tema claro y
 oscuro, y todo el progreso guardado en el dispositivo.
@@ -18,8 +20,8 @@ npm run build            # build estático en dist/
 ## App Android
 
 Cada push a `main` compila un APK en GitHub Actions y lo publica en **Releases** del repositorio
-(archivo `Pausa-1.0.N.apk`). Para instalarlo, ábrelo en el teléfono y permite "instalar apps de
-fuentes desconocidas".
+(archivo `Hitoiki-1.0.N.apk`). Para instalarlo, ábrelo en el teléfono y permite "instalar apps de
+fuentes desconocidas". Si ya la tienes instalada, actualiza desde **Ajustes → Actualizaciones**.
 
 Para compilarlo en tu equipo necesitas Android Studio (o el Android SDK) y Java 21:
 
@@ -60,6 +62,19 @@ deshacer.
 - **Recordatorios**: un aviso diario a la hora que elijas, con mensajes que rotan, y un aviso de racha
   a las 21:30 si aún no completaste el día. En Android son notificaciones programadas que llegan con la
   app cerrada; en el navegador sólo funcionan con la página abierta.
+
+## Actualizaciones y datos
+
+- **Actualizar desde la app**: Ajustes → Actualizaciones → Buscar. En Android descarga el paquete
+  web nuevo desde GitHub Releases y lo aplica sin reinstalar; si la versión trae cambios nativos,
+  ofrece descargar el APK. En la web detecta un despliegue nuevo y recarga.
+- **Tu progreso nunca se pierde al actualizar**:
+  - el formato de guardado está versionado y cada versión migra los datos antiguos;
+  - en Android se guarda además una copia nativa y un respaldo automático en `Documentos/Hitoiki/`
+    que sobrevive a desinstalar la app;
+  - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
+- **Firma de los APK**: el CI firma con la clave guardada en los secretos del repositorio
+  `PAUSA_KEYSTORE_BASE64` y `PAUSA_KEYSTORE_PASSWORD`, para que cada APK se instale sobre el anterior.
 
 ## Modos
 

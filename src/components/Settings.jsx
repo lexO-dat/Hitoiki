@@ -17,7 +17,7 @@ export default function Settings({ navigate }) {
     if (await ensurePermission()) {
       setSetting('reminders', true);
       setNotice('');
-    } else setNotice('Activa las notificaciones de Pausa en los ajustes del teléfono.');
+    } else setNotice('Activa las notificaciones de Hitoiki en los ajustes del teléfono.');
   };
   const Switch = ({ k }) => (
     <button className="switch" role="switch" aria-checked={!!settings[k]} onClick={() => setSetting(k, !settings[k])} />
@@ -124,7 +124,7 @@ export default function Settings({ navigate }) {
             Copia de seguridad
             <br />
             <small className="muted">
-              {Capacitor.isNativePlatform() ? 'Automática en Documentos/Pausa. También puedes exportarla.' : 'Descarga un archivo con todo tu progreso.'}
+              {Capacitor.isNativePlatform() ? 'Automática en Documentos/Hitoiki. También puedes exportarla.' : 'Descarga un archivo con todo tu progreso.'}
             </small>
           </span>
           <button className="btn" onClick={() => exportBackup().then((f) => setNotice(`Copia guardada: ${f}`), (e) => setNotice(`No se pudo exportar: ${e.message}`))}>
@@ -159,7 +159,7 @@ export default function Settings({ navigate }) {
         </div>
       </div>
       {notice && <p className="footnote">{notice}</p>}
-      <p className="footnote">Pausa · v{APP_VERSION} · Todo se guarda en este dispositivo.</p>
+      <p className="footnote">Hitoiki 一息 · v{APP_VERSION} · Todo se guarda en este dispositivo.</p>
     </div>
   );
 }

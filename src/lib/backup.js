@@ -1,27 +1,29 @@
 // Keeps player data safe across every kind of update:
 //  1. Native mirror (Android SharedPreferences): restored if the WebView storage ever comes back empty.
-//  2. Automatic backup file in Documents/Pausa/: survives uninstalling the app.
+//  2. Automatic backup file in Documents/Hitoiki/: survives uninstalling the app.
 //  3. Manual export / import of a .json file (web and Android).
 // All plugins are loaded lazily and every failure is swallowed: backups must never break the game.
 import { Capacitor } from '@capacitor/core';
 import { isEmpty, migrate, SCHEMA, store } from './storage.js';
 
 const isNative = () => Capacitor.isNativePlatform();
-const PREF_KEY = 'pausa-store';
-const BACKUP_DIR = 'Pausa';
-const BACKUP_FILE = `${BACKUP_DIR}/pausa-progreso.json`;
+const PREF_KEY = 'pausa-store'; // internal key from the first release: keep it so old data is found
+const BACKUP_DIR = 'Hitoiki';
+const BACKUP_FILE = `${BACKUP_DIR}/hitoiki-progreso.json`;
+const OLD_BACKUP_FILES = ['Pausa/pausa-progreso.json']; // written by versions named "Pausa"
 
 const prefs = async () => (await import('@capacitor/preferences').catch(() => null))?.Preferences;
 const fs = async () => await import('@capacitor/filesystem').catch(() => null);
 
 export function serialize(state = store.get()) {
-  return JSON.stringify({ app: 'pausa', schema: SCHEMA, exportedAt: new Date().toISOString(), data: state });
+  return JSON.stringify({ app: 'hitoiki', schema: SCHEMA, exportedAt: new Date().toISOString(), data: state });
 }
 
 export function parseBackup(text) {
   const json = JSON.parse(text);
-  const data = json?.app === 'pausa' ? json.data : json; // also accept a raw store object
-  if (!data || typeof data !== 'object' || (!data.results && !data.settings)) throw new Error('El archivo no es una copia de Pausa.');
+  // 'pausa' backups come from versions released before the rename; a raw store object is accepted too.
+  const data = json?.app === 'hitoiki' || json?.app === 'pausa' ? json.data : json;
+  if (!data || typeof data !== 'object' || (!data.results && !data.settings)) throw new Error('El archivo no es una copia de Hitoiki.');
   return migrate(data);
 }
 
@@ -64,8 +66,13 @@ export async function initBackups() {
       else {
         // Fresh install after an uninstall: the backup file may still be in Documents.
         const m = await fs();
-        const res = await m?.Filesystem.readFile({ path: BACKUP_FILE, directory: m.Directory.Documents, encoding: m.Encoding.UTF8 }).catch(() => null);
-        if (res?.data) store.replace(parseBackup(res.data));
+        for (const path of [BACKUP_FILE, ...OLD_BACKUP_FILES]) {
+          const res = await m?.Filesystem.readFile({ path, directory: m.Directory.Documents, encoding: m.Encoding.UTF8 }).catch(() => null);
+          if (res?.data) {
+            store.replace(parseBackup(res.data));
+            break;
+          }
+        }
       }
     }
   } catch {
@@ -82,9 +89,9 @@ export async function initBackups() {
   writeBackupFile(store.get()).catch(() => {});
 }
 
-// Manual export. Android: saves into Documents/Pausa and opens the share sheet. Web: downloads the file.
+// Manual export. Android: saves into Documents/Hitoiki and opens the share sheet. Web: downloads the file.
 export async function exportBackup() {
-  const name = `pausa-progreso-${new Date().toISOString().slice(0, 10)}.json`;
+  const name = `hitoiki-progreso-${new Date().toISOString().slice(0, 10)}.json`;
   const text = serialize();
   if (isNative()) {
     const m = await fs();
@@ -96,7 +103,7 @@ export async function exportBackup() {
       recursive: true,
     });
     const share = (await import('@capacitor/share').catch(() => null))?.Share;
-    await share?.share({ title: 'Copia de Pausa', files: [uri] }).catch(() => {});
+    await share?.share({ title: 'Copia de Hitoiki', files: [uri] }).catch(() => {});
     return `Documentos/${BACKUP_DIR}/${name}`;
   }
   const a = document.createElement('a');

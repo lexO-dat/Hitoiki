@@ -10,12 +10,12 @@ const DAILY_BASE = 100; // ids 100..106: daily reminders for the next week
 const STREAK_ID = 200; // evening "keep your streak" reminder for today
 
 const DAILY = [
-  ['Tu pausa de hoy está lista', 'Cuatro puzzles nuevos te esperan. Prepara un té ☕'],
+  ['Tu respiro de hoy está listo', 'Cuatro puzzles nuevos te esperan. Prepara un té ☕'],
   ['Un ratito para ti', 'Los puzzles de hoy ya están servidos.'],
-  ['¿Una pausa?', 'Cinco minutos, un puzzle y la mente despejada.'],
+  ['¿Un respiro? 一息', 'Cinco minutos, un puzzle y la mente despejada.'],
   ['Nuevos puzzles', 'Coronas, Ruta, Puentes… elige tu favorito de hoy.'],
   ['Hora de pensar tranquilo', 'Tu dosis diaria de lógica te está esperando.'],
-  ['Pausa activa', 'Respira hondo y resuelve el primero del día.'],
+  ['Hitoiki', 'Respira hondo y resuelve el primero del día.'],
   ['Hoy toca puzzle', 'Pequeños retos, gran satisfacción.'],
 ];
 

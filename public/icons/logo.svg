@@ -4,9 +4,13 @@
     <rect x="4" y="4" width="28" height="28" fill="#f4b8c8"/><rect x="32" y="4" width="28" height="28" fill="#cfc4f4"/>
     <rect x="4" y="32" width="28" height="28" fill="#bfe0a6"/><rect x="32" y="32" width="28" height="28" fill="#f6d983"/>
   </g>
-  <path d="M32 4v56M4 32h56" stroke="#303030" stroke-width="3"/>
-  <path d="M49.5 11.5a8 8 0 1 0 3.6 12.6 6.4 6.4 0 0 1-3.6-12.6z" fill="#303030"/>
-  <path d="M18 39.5l1.6 4.1 4.1 1.6-4.1 1.6L18 50.9l-1.6-4.1-4.1-1.6 4.1-1.6z" fill="#303030"/>
-  <circle cx="18" cy="18" r="4.2" fill="#303030"/><rect x="42" y="42" width="8" height="8" rx="2" fill="#303030"/>
+  <!-- 一 written with a brush: angled entry, slightly rising body, pressed rounded ending -->
+  <path d="M9.8 33.6c.6-2.5 2.6-4.1 5.2-4.4 9.4-1.2 21.8-2.1 31.2-2.2 2.2 0 4.1-.7 6.1-.6 2.7.2 4.5 2 4.6 4.3.1 2.3-1.6 3.9-4.2 4.1-1.9.2-3.6-.6-5.4-.6-9.6.1-20.3.9-30.1 2-3.6.4-6.9-.1-7.4-2.6z" fill="#303030"/>
+  <!-- hanko seal, slightly tilted like a hand stamp -->
+  <g transform="rotate(-7 47.5 47.5)">
+    <rect x="42" y="42" width="11" height="11" rx="2" fill="#d9534f"/>
+    <rect x="43.6" y="43.6" width="7.8" height="7.8" rx="1.1" fill="none" stroke="#fff" stroke-opacity=".92" stroke-width=".9"/>
+    <path d="M45.6 46.2h3.8M47.5 46.2v3.6M45.8 49.8h3.4" stroke="#fff" stroke-opacity=".92" stroke-width=".85" stroke-linecap="round" fill="none"/>
+  </g>
   <rect x="4" y="4" width="56" height="56" rx="15" fill="none" stroke="#303030" stroke-width="3.5"/>
 </svg>

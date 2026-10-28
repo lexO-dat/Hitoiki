@@ -30,12 +30,21 @@ test('the bar stays put while switching sections and the pill follows', async ()
   for (const label of ['Infinito', 'Niveles', 'Cuaderno', 'Diario']) {
     await p.click(`.nav button:has-text("${label}")`);
     await p.waitForFunction((l) => document.querySelector('.nav .on')?.textContent === l, label);
-    // Sampled during the page transition: the bar is the same element and fully opaque.
-    const s = await p.evaluate(() => {
-      const nav = document.querySelector('.nav');
-      return { mark: nav?.dataset.mark, opacity: getComputedStyle(nav).opacity, active: nav.querySelector('.on')?.textContent };
+    // Sampled on every frame of the page transition: same element, fully opaque, on screen at the bottom.
+    const s = await p.evaluate(async () => {
+      const seen = { mark: new Set(), opacity: new Set(), offscreen: 0 };
+      const t0 = performance.now();
+      while (performance.now() - t0 < 500) {
+        const nav = document.querySelector('.nav');
+        seen.mark.add(nav?.dataset.mark);
+        seen.opacity.add(getComputedStyle(nav).opacity);
+        const r = nav.getBoundingClientRect();
+        if (r.bottom > innerHeight || r.top < innerHeight - 140) seen.offscreen++;
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      return { mark: [...seen.mark].join(), opacity: [...seen.opacity].join(), offscreen: seen.offscreen, active: document.querySelector('.nav .on')?.textContent };
     });
-    assert.deepEqual(s, { mark: 'same', opacity: '1', active: label });
+    assert.deepEqual(s, { mark: 'same', opacity: '1', offscreen: 0, active: label });
   }
   await p.context().close();
 });
@@ -70,6 +79,23 @@ test('swiping sideways moves between sections, but not inside a game', async () 
   await p.waitForTimeout(300);
   assert.equal(await p.evaluate(() => location.hash), '#/inf/standard/queens/1');
   assert.equal(await p.$('.nav'), null, 'no bar inside a game');
+  await p.context().close();
+});
+
+test('every section opens at the top, even if the previous one was still scrolling (fling)', async () => {
+  const p = await page(b, { viewport: { width: 390, height: 700 } });
+  await p.goto(`${srv.url}#/stats`);
+  await p.waitForSelector('#boot', { state: 'detached' });
+  for (const target of ['#/', '#/inf', '#/lvl', '#/stats']) {
+    await p.evaluate(() => window.scrollTo(0, 500));
+    // A smooth scroll still running when the section changes: like the momentum of a swipe on Android.
+    await p.evaluate((t) => {
+      window.scrollTo({ top: 3000, behavior: 'smooth' });
+      location.hash = t;
+    }, target);
+    await p.waitForTimeout(900);
+    assert.equal(await p.evaluate(() => Math.round(scrollY)), 0, `${target} did not open at the top`);
+  }
   await p.context().close();
 });
 

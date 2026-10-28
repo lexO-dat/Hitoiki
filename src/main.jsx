@@ -18,6 +18,9 @@ window.addEventListener('error', (e) => showFatalError(e.error ?? e.message));
 window.addEventListener('unhandledrejection', (e) => showFatalError(e.reason, { soft: true }));
 
 // Render immediately; durable copies are restored in the background (Android) and merged in.
+// The app decides where each screen starts (always at the top); the browser must not restore positions.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 createRoot(document.getElementById('root')).render(<App />);
 
 // Loading screen (index.html): let the ensō finish drawing, wait for the fonts (briefly), then fade out.

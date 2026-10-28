@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import Home from './components/Home.jsx';
 import GameScreen from './components/GameScreen.jsx';
 import Settings from './components/Settings.jsx';
@@ -158,11 +158,39 @@ export default function App() {
       setDir(direction(last, next));
       last = next;
       setRoute(next);
-      window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+
+  // Every screen opens at the top. Done after the new page is in the DOM, and the scroll momentum
+  // of the gesture that navigated (a swipe or fling, which Android keeps applying) is cut, so the
+  // new screen doesn't inherit it. Repeated briefly during the transition unless the user touches again.
+  const routeKey = route.join('/');
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const top = () => {
+      window.scrollTo(0, 0);
+      root.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    root.style.overflow = 'hidden'; // stops an in-flight fling
+    top();
+    let touched = false;
+    const touch = () => (touched = true);
+    window.addEventListener('touchstart', touch, { passive: true });
+    const frame = requestAnimationFrame(() => {
+      root.style.overflow = '';
+      top();
+    });
+    const later = [120, 300, 480].map((ms) => setTimeout(() => !touched && top(), ms));
+    return () => {
+      cancelAnimationFrame(frame);
+      later.forEach(clearTimeout);
+      root.style.overflow = '';
+      window.removeEventListener('touchstart', touch);
+    };
+  }, [routeKey]);
 
   // Swipe sideways between the four sections (only on them, never over a board or a dialog).
   const tab = tabOf(route);
@@ -255,7 +283,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <div className={`page enter-${dir}`} key={route.join('/')}>
+      <div className={`page enter-${dir}`} key={routeKey}>
         {content}
       </div>
       {tab && <Nav current={tab} navigate={navigate} />}

@@ -3,7 +3,6 @@ import { GAMES, GAME_BY_ID } from '../data/games.js';
 import { COLLECTION_LABEL, DIFFICULTY_LABEL, loadIndex, loadLevels } from '../lib/levels.js';
 import { useStore } from '../lib/storage.js';
 import { Back, Gear } from './Icons.jsx';
-import Nav from './Nav.jsx';
 import Thumb from './Thumb.jsx';
 
 function Missing() {
@@ -75,7 +74,6 @@ export function ClassicHome({ navigate }) {
           </div>
         </>
       )}
-      <Nav current="/lvl" navigate={navigate} />
     </div>
   );
 }

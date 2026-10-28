@@ -19,4 +19,15 @@ window.addEventListener('unhandledrejection', (e) => showFatalError(e.reason, { 
 
 // Render immediately; durable copies are restored in the background (Android) and merged in.
 createRoot(document.getElementById('root')).render(<App />);
+
+// Loading screen (index.html): let the ensō finish drawing, wait for the fonts (briefly), then fade out.
+const boot = document.getElementById('boot');
+if (boot) {
+  const fonts = Promise.race([document.fonts?.ready, new Promise((r) => setTimeout(r, 1200))]);
+  const minimum = new Promise((r) => setTimeout(r, Math.max(0, 950 - performance.now())));
+  Promise.all([fonts, minimum]).then(() => {
+    boot.classList.add('done');
+    setTimeout(() => boot.remove(), 500);
+  });
+}
 initBackups().catch(() => {});

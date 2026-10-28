@@ -89,8 +89,24 @@ button:disabled { cursor: default; }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; letter-spacing: 0.01em; }
 
 .app { max-width: 520px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
-.screen { flex: 1; display: flex; flex-direction: column; padding: 0 18px calc(24px + env(safe-area-inset-bottom)); animation: enter 0.35s var(--ease); }
-@keyframes enter { from { opacity: 0; transform: translateY(6px); } }
+.screen { flex: 1; display: flex; flex-direction: column; padding: 0 18px calc(24px + env(safe-area-inset-bottom)); }
+
+/* Page transitions: sideways between the bottom-bar sections (following the direction of travel),
+   a soft rise into a screen, and a gentle settle coming back. Only the entering page animates, so
+   the bar (outside .page) never moves. */
+.page { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.page.enter-right { animation: from-right 0.38s var(--ease) backwards; }
+.page.enter-left { animation: from-left 0.38s var(--ease) backwards; }
+.page.enter-in { animation: rise-in 0.42s var(--ease) backwards; }
+.page.enter-out { animation: settle 0.36s var(--ease) backwards; }
+@keyframes from-right { from { opacity: 0; transform: translateX(34px); } }
+@keyframes from-left { from { opacity: 0; transform: translateX(-34px); } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(18px) scale(0.985); filter: blur(2px); } }
+@keyframes settle { from { opacity: 0; transform: scale(1.015); } }
+
+/* Scrolling works everywhere, without visible scrollbars. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* ---------------------------------------------------------------- header */
 .topbar {
@@ -438,10 +454,20 @@ h3.section small { font-family: var(--sans); font-weight: 400; }
   background: color-mix(in srgb, var(--paper-2) 86%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border-radius: 24px; box-shadow: 0 1px 0 rgb(255 255 255 / 0.5) inset, 0 14px 30px -12px rgb(40 30 20 / 0.45);
 }
-.nav button { border: 0; background: none; border-radius: 18px; padding: 7px 0 6px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-2); transition: background 0.2s var(--ease), color 0.2s; }
-.nav button svg { width: 22px; height: 22px; }
-.nav button.on { background: var(--ink); color: var(--paper); font-weight: 700; }
+.nav button {
+  position: relative; z-index: 1; border: 0; background: none; border-radius: 18px; padding: 7px 0 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-2);
+  transition: color 0.3s var(--ease), transform 0.12s var(--ease);
+}
+.nav button svg { width: 22px; height: 22px; transition: transform 0.35s var(--spring); }
+.nav button.on { color: var(--paper); font-weight: 700; }
+.nav button.on svg { transform: translateY(-1px) scale(1.08); }
 .nav button:active { transform: scale(0.94); }
+/* The active pill slides from icon to icon. */
+.nav-pill {
+  position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 24px) / 4); border-radius: 18px; background: var(--ink);
+  transform: translateX(calc(var(--i) * (100% + 4px))); transition: transform 0.42s var(--spring);
+}
 
 /* Daily puzzle opened after its day */
 .screen.closed { justify-content: center; align-items: center; text-align: center; gap: 6px; min-height: 100dvh; }

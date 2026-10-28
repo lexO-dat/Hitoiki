@@ -18,8 +18,22 @@ import { markAppReady } from './lib/updates.js';
 import { initAchievements } from './lib/achievements.js';
 import { syncWidget } from './lib/widget.js';
 import { Capacitor } from '@capacitor/core';
+import Nav, { TABS } from './components/Nav.jsx';
 
 const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean);
+
+// The four main sections live in the bottom bar; everything else is a screen on top of them.
+const tabOf = ([page, ...args]) =>
+  !page ? '/' : page === 'inf' && !args.length ? '/inf' : page === 'lvl' && !args.length ? '/lvl' : page === 'stats' ? '/stats' : null;
+const depthOf = (r) => (tabOf(r) ? 0 : r.length);
+
+// Direction of a route change, for the page transition: sideways between tabs, rising into a screen.
+function direction(from, to) {
+  const a = tabOf(from);
+  const b = tabOf(to);
+  if (a && b) return TABS.indexOf(b) > TABS.indexOf(a) ? 'right' : TABS.indexOf(b) < TABS.indexOf(a) ? 'left' : 'none';
+  return depthOf(to) >= depthOf(from) ? 'in' : 'out';
+}
 const modeLabel = (m) => MODES.find((x) => x.id === m)?.label ?? m;
 // Classic difficulties map onto the visual mode badges.
 const CLASSIC_MODE = { easy: 'standard', medium: 'standard', hard: 'hard', expert: 'expert' };
@@ -79,6 +93,7 @@ export default function App() {
   useApplyTheme(theme);
   const reminders = useStore((s) => s.settings.notify);
   const [route, setRoute] = useState(parse);
+  const [dir, setDir] = useState('none');
 
   // Keep scheduled reminders in sync with settings, and refresh them whenever the app comes back.
   useEffect(() => {
@@ -137,13 +152,47 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let last = parse();
     const on = () => {
-      setRoute(parse());
+      const next = parse();
+      setDir(direction(last, next));
+      last = next;
+      setRoute(next);
       window.scrollTo(0, 0);
     };
     window.addEventListener('hashchange', on);
     return () => window.removeEventListener('hashchange', on);
   }, []);
+
+  // Swipe sideways between the four sections (only on them, never over a board or a dialog).
+  const tab = tabOf(route);
+  useEffect(() => {
+    if (!tab) return;
+    let start = null;
+    const down = (e) => {
+      const t = e.touches[0];
+      // Leave the screen edges to the system back gesture, and sliders/inputs alone.
+      start = t.clientX < 24 || t.clientX > innerWidth - 24 || e.target.closest?.('input, .overlay') ? null : { x: t.clientX, y: t.clientY, at: Date.now() };
+    };
+    const up = (e) => {
+      const s0 = start;
+      start = null;
+      if (!s0) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - s0.x;
+      const dy = t.clientY - s0.y;
+      // A quick, clearly horizontal swipe; vertical scrolling never changes section.
+      if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - s0.at > 800) return;
+      const i = TABS.indexOf(tab) + (dx < 0 ? 1 : -1);
+      if (i >= 0 && i < TABS.length) window.location.hash = TABS[i];
+    };
+    window.addEventListener('touchstart', down, { passive: true });
+    window.addEventListener('touchend', up, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', down);
+      window.removeEventListener('touchend', up);
+    };
+  }, [tab]);
 
   const navigate = (path) => {
     window.location.hash = path;
@@ -204,5 +253,12 @@ export default function App() {
   else if (page === 'stats') content = <Stats navigate={navigate} />;
   else content = <Home date={date} today={today} mode={mode} setDate={setDate} setMode={setMode} navigate={navigate} />;
 
-  return <div className="app">{content}</div>;
+  return (
+    <div className="app">
+      <div className={`page enter-${dir}`} key={route.join('/')}>
+        {content}
+      </div>
+      {tab && <Nav current={tab} navigate={navigate} />}
+    </div>
+  );
 }

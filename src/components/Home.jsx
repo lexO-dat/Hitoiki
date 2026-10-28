@@ -4,7 +4,6 @@ import { addDays, dayNum, diffDays, formatTime, longDate, weekDays, weekdayLong,
 import { completedOn, computeStreak, resultKey, STREAK_REQUIRED, useStore } from '../lib/storage.js';
 import { Arrow, Back, Flame, Gear, Leaf } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
-import Nav from './Nav.jsx';
 import Logo from './Logo.jsx';
 import Enso from './Enso.jsx';
 import Seal from './Seal.jsx';
@@ -217,7 +216,6 @@ export default function Home({ date, today, mode, setDate, setMode, navigate }) 
           );
         })}
       </div>
-      <Nav current="/" navigate={navigate} />
     </div>
   );
 }

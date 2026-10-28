@@ -1,7 +1,6 @@
 import { GAMES, MODES } from '../data/games.js';
 import { useStore } from '../lib/storage.js';
 import { Gear } from './Icons.jsx';
-import Nav from './Nav.jsx';
 import Thumb from './Thumb.jsx';
 
 // Highest solved infinite level per game & difficulty.
@@ -47,7 +46,6 @@ export default function InfiniteHome({ mode, setMode, navigate }) {
           );
         })}
       </div>
-      <Nav current="/inf" navigate={navigate} />
     </div>
   );
 }

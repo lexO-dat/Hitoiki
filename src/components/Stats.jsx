@@ -6,7 +6,6 @@ import { Back, Flame, Gear, Leaf } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 import Seal from './Seal.jsx';
 import Enso from './Enso.jsx';
-import Nav from './Nav.jsx';
 import { achievements } from '../lib/achievements.js';
 import { recapWeek } from '../lib/weekly.js';
 import WeekCard from './WeekCard.jsx';
@@ -190,7 +189,6 @@ export default function Stats({ navigate }) {
           </div>
         ))}
       </div>
-      <Nav current="/stats" navigate={navigate} />
     </div>
   );
 }

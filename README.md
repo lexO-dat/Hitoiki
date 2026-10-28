@@ -72,9 +72,13 @@ deshacer.
     resolviste sin pistas ni errores, y un motivo fijo cuando completas los puzzles del día para la racha.
   - **Música ambiente** opcional: un colchón suave que sigue los acordes mientras juegas.
   - En Ajustes se puede apagar el sonido o la música ambiente, y ajustar el volumen.
-- **Recordatorios**: un aviso diario a la hora que elijas, con mensajes que rotan, y un aviso de racha
-  a las 21:30 si aún no completaste el día. En Android son notificaciones programadas que llegan con la
-  app cerrada; en el navegador sólo funcionan con la página abierta.
+- **Recordatorios** (activados por defecto; se pueden apagar en Ajustes):
+  - a las **00:01** de cada día, aviso de que hay puzzles nuevos (programado con una semana de
+    anticipación, así llega aunque no abras la app);
+  - si llevas **8 horas sin entrar**, un aviso suave (menciona tu racha si está en juego). Se reprograma
+    cada vez que abres o sales de la app.
+  En Android son notificaciones programadas con alarmas exactas que llegan con la app cerrada; en el
+  navegador sólo funcionan con la página abierta.
 
 ## Actualizaciones y datos
 

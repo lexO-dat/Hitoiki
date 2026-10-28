@@ -13,7 +13,7 @@ import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/le
 import { resultKey, store, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
-import { syncReminders } from './lib/notify.js';
+import { askPermissionOnce, syncReminders } from './lib/notify.js';
 import { markAppReady } from './lib/updates.js';
 import { Capacitor } from '@capacitor/core';
 
@@ -75,13 +75,15 @@ function ClassicPlay({ gameId, index, navigate }) {
 export default function App() {
   const theme = useStore((s) => s.settings.theme);
   useApplyTheme(theme);
-  const reminders = useStore((s) => `${s.settings.reminders}|${s.settings.reminderHour}`);
+  const reminders = useStore((s) => s.settings.notify);
   const [route, setRoute] = useState(parse);
 
   // Keep scheduled reminders in sync with settings, and refresh them whenever the app comes back.
   useEffect(() => {
+    askPermissionOnce().catch(() => {});
     syncReminders().catch(() => {});
-    const on = () => document.visibilityState === 'visible' && syncReminders().catch(() => {});
+    // Opening or leaving the app pushes the "8 hours away" reminder back.
+    const on = () => syncReminders().catch(() => {});
     document.addEventListener('visibilitychange', on);
     return () => document.removeEventListener('visibilitychange', on);
   }, [reminders]);

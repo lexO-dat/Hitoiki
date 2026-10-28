@@ -1,23 +1,39 @@
-// Reminder notifications. On Android (Capacitor) they are real scheduled local notifications that
-// fire with the app closed; in a browser we can only remind while the page is open.
+// Reminder notifications, on by default:
+//  - 00:01 every day: today's new puzzles are ready (scheduled a week ahead, so they keep coming
+//    even if the app is not opened).
+//  - 8 hours after the last time the app was used: a gentle "come back" nudge. It is pushed back
+//    every time the app is opened or left, so it only fires after 8 hours away.
+// On Android (Capacitor) they are real scheduled local notifications that fire with the app closed;
+// in a browser we can only remind while the page is open.
 import { Capacitor } from '@capacitor/core';
 import { completedOn, computeStreak, STREAK_REQUIRED, store } from './storage.js';
-import { addDays, todayKey } from './dates.js';
+import { addDays, toKey } from './dates.js';
 
 const isNative = () => Capacitor.isNativePlatform();
 const DAYS_AHEAD = 7;
-const DAILY_BASE = 100; // ids 100..106: daily reminders for the next week
-const STREAK_ID = 200; // evening "keep your streak" reminder for today
+const DAILY_BASE = 100; // ids 100..106: new puzzles at 00:01 for the next week
+const AWAY_ID = 300; // "8 hours away"
+export const AWAY_HOURS = 8;
+const OLD_IDS = [200]; // evening streak reminder of earlier versions
 
-const DAILY = [
-  ['Tu respiro de hoy está listo', 'Cuatro puzzles nuevos te esperan. Prepara un té ☕'],
-  ['Un ratito para ti', 'Los puzzles de hoy ya están servidos.'],
-  ['¿Un respiro? 一息', 'Cinco minutos, un puzzle y la mente despejada.'],
-  ['Nuevos puzzles', 'Coronas, Ruta, Puentes… elige tu favorito de hoy.'],
-  ['Hora de pensar tranquilo', 'Tu dosis diaria de lógica te está esperando.'],
-  ['Hitoiki', 'Respira hondo y resuelve el primero del día.'],
-  ['Hoy toca puzzle', 'Pequeños retos, gran satisfacción.'],
+const NEW_DAY = [
+  ['Nuevos puzzles 🌙', 'Los puzzles de hoy ya están listos. Respira hondo y empieza cuando quieras.'],
+  ['Un día nuevo, un respiro nuevo', 'Cuatro puzzles frescos te esperan. 一息'],
+  ['Ya llegaron los de hoy', 'Coronas, Ruta, Puentes… elige tu favorito.'],
+  ['Puzzles recién hechos', 'Tu dosis diaria de lógica ya está servida.'],
+  ['Hitoiki 一息', 'Hay puzzles nuevos. ¿Cuál será el primero?'],
+  ['Nuevo día en Hitoiki', 'Los sellos de hoy están por estrenarse.'],
+  ['Hoy toca puzzle', 'Pequeños retos, gran satisfacción. Ya están disponibles.'],
 ];
+
+// Text for the "away" nudge, from where the player stands when they leave.
+function awayMessage(s, today) {
+  const { streak } = computeStreak(s, today);
+  const left = STREAK_REQUIRED - completedOn(s, today);
+  if (streak > 0 && left > 0) return [`Tu racha de ${streak} ${streak === 1 ? 'día' : 'días'} te espera 🔥`, `Te faltan ${left} ${left === 1 ? 'puzzle' : 'puzzles'} para mantenerla hoy.`];
+  if (left > 0) return ['¿Un respiro? 一息', 'Hace rato que no pasas por aquí. Un puzzle y la mente despejada.'];
+  return ['Un ratito para ti', 'Hay más puzzles en Infinito y Niveles cuando quieras.'];
+}
 
 // Returns the module, not the plugin object: awaiting a Capacitor plugin proxy never resolves.
 const notificationsModule = () => import('@capacitor/local-notifications');
@@ -34,57 +50,58 @@ export async function ensurePermission() {
   return (await Notification.requestPermission()) === 'granted';
 }
 
+// Ask once, on the first start of a version with reminders on by default.
+export async function askPermissionOnce() {
+  const s = store.get();
+  if (s.settings.notify === false || s.settings.notifyAsked) return;
+  store.update((x) => ({ ...x, settings: { ...x.settings, notifyAsked: true } }));
+  if (isNative() || ('Notification' in window && Notification.permission === 'default')) await ensurePermission();
+  await syncReminders();
+}
+
 const at = (dateKey, hour, minute = 0) => {
   const [y, m, d] = dateKey.split('-').map(Number);
   return new Date(y, m - 1, d, hour, minute);
 };
 
+export function plan(s = store.get(), now = new Date()) {
+  if (s.settings.notify === false) return [];
+  const today = toKey(now);
+  const out = [];
+  for (let i = 1; i <= DAYS_AHEAD; i++) {
+    const day = addDays(today, i);
+    const [title, body] = NEW_DAY[(Number(day.slice(8)) + i) % NEW_DAY.length];
+    out.push({ id: DAILY_BASE + i - 1, title, body, when: at(day, 0, 1) });
+  }
+  const away = new Date(now.getTime() + AWAY_HOURS * 3600 * 1000);
+  // No need for both within the same hour: the new-puzzles one already brings you back.
+  if (!out.some((n) => Math.abs(n.when - away) < 3600 * 1000)) {
+    const [title, body] = awayMessage(s, today);
+    out.push({ id: AWAY_ID, title, body, when: away });
+  }
+  return out;
+}
+
 let webTimers = [];
 
-// Rebuild the whole schedule from current settings and progress. Safe to call often.
+// Rebuild the whole schedule. Called on start, whenever the app is shown or hidden, and after solving.
 export async function syncReminders() {
-  const s = store.get();
-  const { reminders, reminderHour = 19 } = s.settings;
-  const today = todayKey();
-  const doneToday = completedOn(s, today) >= STREAK_REQUIRED;
-  const { streak } = computeStreak(s, today);
-  const now = new Date();
-
-  const plan = [];
-  if (reminders) {
-    for (let i = 0; i < DAYS_AHEAD; i++) {
-      const day = addDays(today, i);
-      const when = at(day, reminderHour);
-      if (when <= now || (i === 0 && doneToday)) continue;
-      const [title, body] = DAILY[(new Date(when).getDate() + i) % DAILY.length];
-      plan.push({ id: DAILY_BASE + i, title, body, when });
-    }
-    // Evening nudge only when a streak is at stake and today's puzzles aren't done yet.
-    const evening = at(today, 21, 30);
-    if (streak > 0 && !doneToday && evening > now) {
-      plan.push({
-        id: STREAK_ID,
-        title: `Tu racha de ${streak} ${streak === 1 ? 'día' : 'días'} 🔥`,
-        body: `Te faltan ${STREAK_REQUIRED - completedOn(s, today)} puzzles para mantenerla hoy.`,
-        when: evening,
-      });
-    }
-  }
-
+  const list = plan();
   if (isNative()) {
     const ln = (await notificationsModule()).LocalNotifications;
     const pending = await ln.getPending();
-    if (pending.notifications.length) await ln.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
-    if (!plan.length) return;
+    const ids = [...new Set([...pending.notifications.map((n) => n.id), AWAY_ID, ...OLD_IDS])];
+    await ln.cancel({ notifications: ids.map((id) => ({ id })) });
+    if (!list.length) return;
     if ((await ln.checkPermissions()).display !== 'granted') return;
     await ln.schedule({
-      notifications: plan.map((n) => ({
+      notifications: list.map((n) => ({
         id: n.id,
         title: n.title,
         body: n.body,
         schedule: { at: n.when, allowWhileIdle: true },
         smallIcon: 'ic_stat_pausa',
-        iconColor: '#303030',
+        iconColor: '#cf4b2f',
       })),
     });
     return;
@@ -94,7 +111,8 @@ export async function syncReminders() {
   webTimers.forEach(clearTimeout);
   webTimers = [];
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  for (const n of plan) {
+  const now = Date.now();
+  for (const n of list) {
     const ms = n.when - now;
     if (ms > 0 && ms < 2 ** 31 - 1) webTimers.push(setTimeout(() => new Notification(n.title, { body: n.body, icon: './icons/icon-192.png' }), ms));
   }
@@ -102,10 +120,10 @@ export async function syncReminders() {
 
 export async function testNotification() {
   if (!(await ensurePermission())) return false;
-  const [title, body] = DAILY[0];
+  const [title, body] = NEW_DAY[0];
   if (isNative()) {
     const ln = (await notificationsModule()).LocalNotifications;
-    await ln.schedule({ notifications: [{ id: 999, title, body, schedule: { at: new Date(Date.now() + 3000) }, smallIcon: 'ic_stat_pausa' }] });
+    await ln.schedule({ notifications: [{ id: 999, title, body, schedule: { at: new Date(Date.now() + 3000) }, smallIcon: 'ic_stat_pausa', iconColor: '#cf4b2f' }] });
   } else {
     new Notification(title, { body, icon: './icons/icon-192.png' });
   }

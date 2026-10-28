@@ -2,7 +2,7 @@ import { store, useStore } from '../lib/storage.js';
 import { Back } from './Icons.jsx';
 import { sfx } from '../lib/sound.js';
 import { useState } from 'react';
-import { ensurePermission, testNotification } from '../lib/notify.js';
+import { AWAY_HOURS, ensurePermission, testNotification } from '../lib/notify.js';
 import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
 import { exportBackup, importBackup, wipeBackups } from '../lib/backup.js';
 import { Capacitor } from '@capacitor/core';
@@ -13,9 +13,9 @@ export default function Settings({ navigate }) {
   const settings = useStore((s) => s.settings);
   const [notice, setNotice] = useState('');
   const toggleReminders = async () => {
-    if (settings.reminders) return setSetting('reminders', false);
+    if (settings.notify !== false) return setSetting('notify', false);
     if (await ensurePermission()) {
-      setSetting('reminders', true);
+      setSetting('notify', true);
       setNotice('');
     } else setNotice('Activa las notificaciones de Hitoiki en los ajustes del teléfono.');
   };
@@ -96,32 +96,20 @@ export default function Settings({ navigate }) {
       <h3 className="section">Recordatorios</h3>
       <div className="list">
         <div className="row">
-          Recordatorio diario
-          <button className="switch" role="switch" aria-checked={!!settings.reminders} onClick={toggleReminders} />
+          <span>
+            Recordatorios
+            <br />
+            <small className="muted">A las 00:01 cuando hay puzzles nuevos, y si llevas {AWAY_HOURS} horas sin entrar.</small>
+          </span>
+          <button className="switch" role="switch" aria-checked={settings.notify !== false} onClick={toggleReminders} />
         </div>
-        {settings.reminders && (
-          <>
-            <div className="row">
-              Hora
-              <select className="select" value={settings.reminderHour ?? 19} onChange={(e) => setSetting('reminderHour', Number(e.target.value))}>
-                {Array.from({ length: 17 }, (_, i) => i + 7).map((h) => (
-                  <option key={h} value={h}>
-                    {String(h).padStart(2, '0')}:00
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="row">
-              <span>
-                Aviso de racha
-                <br />
-                <small className="muted">A las 21:30 si aún no completas el día.</small>
-              </span>
-              <button className="btn" onClick={() => testNotification().then((ok) => !ok && setNotice('Permiso de notificaciones denegado.'))}>
-                Probar
-              </button>
-            </div>
-          </>
+        {settings.notify !== false && (
+          <div className="row">
+            Probar notificación
+            <button className="btn" onClick={() => testNotification().then((ok) => !ok && setNotice('Activa las notificaciones de Hitoiki en los ajustes del teléfono.'))}>
+              Probar
+            </button>
+          </div>
         )}
       </div>
       <Updates />

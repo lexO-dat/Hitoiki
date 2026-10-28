@@ -175,8 +175,10 @@ Experiencia de uso:
   ensō del día y la racha, más un texto. En Android abre el menú de compartir del sistema.
 - **Widget de Android**: el ensō de hoy y la racha en la pantalla de inicio; tocarlo abre la app.
 - **Infinito**: niveles numerados sin fin para cada juego y dificultad; al resolver uno se pasa al siguiente.
-- **Niveles**: 44.834 niveles diseñados, organizados por juego, dificultad y colección, con progreso
-  por nivel.
+- **Niveles**: 44.834 niveles diseñados, organizados por juego, dificultad y colección. Dentro de cada
+  dificultad se juegan en orden: cada nivel resuelto desbloquea el siguiente, y el botón
+  **Continuar · Nivel N** lleva directo al que toca (la pantalla de Niveles también ofrece seguir con
+  el último juego). Si ya habías resuelto niveles salteados, queda abierto todo hasta el más lejano.
 
 ## Cómo funciona
 

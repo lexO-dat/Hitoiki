@@ -4,7 +4,8 @@ import GameScreen from './components/GameScreen.jsx';
 import Settings from './components/Settings.jsx';
 import Stats from './components/Stats.jsx';
 import InfiniteHome from './components/InfiniteHome.jsx';
-import { ClassicHome, ClassicList } from './components/Classic.jsx';
+import { ClassicHome, ClassicList, rememberLevel } from './components/Classic.jsx';
+import { progression } from './lib/progress.js';
 import { GAME_BY_ID, MODES } from './data/games.js';
 import { getPuzzle, nextDaily } from './lib/daily.js';
 import { formatTime, longDate } from './lib/dates.js';
@@ -66,13 +67,23 @@ function ClassicPlay({ gameId, index, navigate }) {
   useEffect(() => {
     loadLevels(gameId).then((levels) => setLoaded({ gameId, levels }), () => navigate('/lvl'));
   }, [gameId, navigate]);
+  const results = useStore((s) => s.results);
   const levels = loaded?.gameId === gameId ? loaded.levels : null;
+  const level = levels?.[index];
+  const prog = level ? progression(levels, results, gameId, level.difficulty) : null;
+  const pos = prog ? prog.position(index) : -1;
+  const open = prog ? prog.isOpen(pos) : false;
+  // Remember where the player is, for "Continuar" in Niveles.
+  useEffect(() => {
+    if (level && open) rememberLevel((u) => ({ last: { game: gameId, difficulty: level.difficulty }, diff: { ...(u.diff ?? {}), [gameId]: level.difficulty } }));
+  }, [gameId, level, open]);
+  // Locked levels can't be opened (old links, typed URLs): back to the list.
+  useEffect(() => {
+    if (level && !open) navigate(`/lvl/${gameId}`);
+  }, [level, open, gameId, navigate]);
   if (!levels) return <p className="lead" style={{ padding: 24 }}>Cargando…</p>;
-  const level = levels[index];
-  if (!level) return null;
-  const sameDiff = levels.map((l, i) => [l, i]).filter(([l]) => l.difficulty === level.difficulty);
-  const pos = sameDiff.findIndex(([, i]) => i === index);
-  const nextIdx = sameDiff[pos + 1]?.[1];
+  if (!level || !open) return null;
+  const nextIdx = prog.order[pos + 1];
   return (
     <GameScreen
       key={`${gameId}|${index}`}

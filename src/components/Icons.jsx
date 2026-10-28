@@ -83,3 +83,9 @@ export const Share = icon(
 );
 export const Arrow = icon(<path {...S} d="M5 12h14M13 6l6 6-6 6" />);
 export const Loop = icon(<path {...S} d="M6.5 15.5a3.5 3.5 0 1 1 0-7c3 0 8 7 11 7a3.5 3.5 0 1 0 0-7c-3 0-8 7-11 7z" />);
+export const Lock = icon(
+  <g {...S}>
+    <rect x="5" y="11" width="14" height="10" rx="2.5" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </g>,
+);

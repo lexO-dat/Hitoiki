@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { GAMES, GAME_BY_ID } from '../data/games.js';
 import { COLLECTION_LABEL, DIFFICULTY_LABEL, loadIndex, loadLevels } from '../lib/levels.js';
-import { useStore } from '../lib/storage.js';
-import { Back, Gear } from './Icons.jsx';
+import { store, useStore } from '../lib/storage.js';
+import { levelKey, progression } from '../lib/progress.js';
+import Seal from './Seal.jsx';
+import { Arrow, Back, Gear, Lock } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 
 function Missing() {
@@ -16,6 +18,7 @@ function Missing() {
 
 export function ClassicHome({ navigate }) {
   const results = useStore((s) => s.results);
+  const last = useStore((s) => s.levelsUi?.last);
   const [index, setIndex] = useState(null);
   const [error, setError] = useState(false);
   useEffect(() => {
@@ -46,6 +49,15 @@ export function ClassicHome({ navigate }) {
               .toLocaleString('es')}{' '}
             niveles.
           </p>
+          {last && GAME_BY_ID[last.game] && (
+            <button className="btn primary wide continue-level" onClick={() => navigate(`/lvl/${last.game}`)}>
+              <span>
+                Continuar con {GAME_BY_ID[last.game].name}
+                <small>{DIFFICULTY_LABEL[last.difficulty]}</small>
+              </span>
+              <Arrow width="18" height="18" />
+            </button>
+          )}
           <div className="cards">
             {GAMES.filter((g) => index[g.id]).map((g) => {
               const total = Object.values(index[g.id]).reduce((a, b) => a + b, 0);
@@ -80,25 +92,34 @@ export function ClassicHome({ navigate }) {
 
 const PAGE = 120;
 
+// Remembered per game: the difficulty last browsed, and the last level opened (for "Continuar").
+export const rememberLevel = (patch) => store.update((s) => ({ ...s, levelsUi: { ...(s.levelsUi ?? {}), ...patch(s.levelsUi ?? {}) } }));
+
 export function ClassicList({ gameId, navigate }) {
   const game = GAME_BY_ID[gameId];
   const results = useStore((s) => s.results);
   const [levels, setLevels] = useState(null);
   const [error, setError] = useState(false);
-  const [diff, setDiff] = useState('easy');
+  const [diff, setDiffState] = useState(() => store.get().levelsUi?.diff?.[gameId] ?? 'easy');
   const [coll, setColl] = useState('all');
   const [limit, setLimit] = useState(PAGE);
   useEffect(() => {
     loadLevels(gameId).then(setLevels, () => setError(true));
   }, [gameId]);
+  const setDiff = (d) => {
+    setDiffState(d);
+    rememberLevel((u) => ({ diff: { ...(u.diff ?? {}), [gameId]: d } }));
+  };
 
   const diffs = useMemo(() => (levels ? Object.keys(DIFFICULTY_LABEL).filter((d) => levels.some((l) => l.difficulty === d)) : []), [levels]);
-  const inDiff = useMemo(() => (levels ?? []).map((l, i) => ({ ...l, index: i })).filter((l) => l.difficulty === diff), [levels, diff]);
+  const prog = useMemo(() => (levels ? progression(levels, results, gameId, diff) : null), [levels, results, gameId, diff]);
+  const inDiff = useMemo(() => (prog ? prog.order.map((index, pos) => ({ ...levels[index], index, pos })) : []), [prog, levels]);
   const colls = useMemo(() => [...new Set(inDiff.map((l) => l.collection))], [inDiff]);
   const shown = coll === 'all' ? inDiff : inDiff.filter((l) => l.collection === coll);
   useEffect(() => {
-    if (diffs.length && !diffs.includes(diff)) setDiff(diffs[0]);
+    if (diffs.length && !diffs.includes(diff)) setDiffState(diffs[0]);
   }, [diffs, diff]);
+  const nextLevel = prog && prog.next !== null ? inDiff[prog.next] : null;
 
   return (
     <div className="screen" style={{ '--c': game.main, '--cbg': game.bg }}>
@@ -120,6 +141,29 @@ export function ClassicList({ gameId, navigate }) {
               </button>
             ))}
           </div>
+
+          {nextLevel ? (
+            <button className="btn primary wide continue-level" onClick={() => navigate(`/lvl/${gameId}/${nextLevel.index}`)}>
+              <span>
+                {prog.solved ? 'Continuar' : 'Empezar'}
+                <small>
+                  {DIFFICULTY_LABEL[diff]} · {prog.solved} de {prog.total} resueltos
+                </small>
+              </span>
+              <b>Nivel {nextLevel.pos + 1}</b>
+              <Arrow width="18" height="18" />
+            </button>
+          ) : (
+            prog && (
+              <div className="continue-level done">
+                <Seal kanji={game.kanji} size={40} />
+                <span>
+                  ¡Completaste {DIFFICULTY_LABEL[diff]}!<small>Los {prog.total} niveles resueltos.</small>
+                </span>
+              </div>
+            )
+          )}
+
           {colls.length > 1 && (
             <div className="chips small" role="group" aria-label="Colección">
               {['all', ...colls].map((c) => (
@@ -129,15 +173,20 @@ export function ClassicList({ gameId, navigate }) {
               ))}
             </div>
           )}
-          <p className="lead">
-            {shown.filter((l) => results[`lvl|${gameId}|${l.id}`]).length} / {shown.length} resueltos
-          </p>
           <div className="levelgrid">
-            {shown.slice(0, limit).map((l, k) => {
-              const solved = results[`lvl|${gameId}|${l.id}`];
+            {shown.slice(0, limit).map((l) => {
+              const solved = results[levelKey(gameId, l)];
+              const open = prog.isOpen(l.pos);
+              const current = l.pos === prog.next;
               return (
-                <button key={l.id} className={`lvlbtn${solved ? ' solved' : ''}`} onClick={() => navigate(`/lvl/${gameId}/${l.index}`)} title={l.id}>
-                  {k + 1}
+                <button
+                  key={l.id}
+                  className={`lvlbtn${solved ? ' solved' : ''}${current ? ' current' : ''}${open ? '' : ' locked'}`}
+                  disabled={!open}
+                  onClick={() => navigate(`/lvl/${gameId}/${l.index}`)}
+                  aria-label={`Nivel ${l.pos + 1}${solved ? ', resuelto' : open ? '' : ', bloqueado'}`}
+                >
+                  {open ? l.pos + 1 : <Lock width="14" height="14" />}
                 </button>
               );
             })}

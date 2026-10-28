@@ -480,6 +480,15 @@ h3.section small { font-family: var(--sans); font-weight: 400; }
 .lvlbtn { aspect-ratio: 1; border: 0; background: var(--paper-2); border-radius: 14px; box-shadow: var(--lift-sm); font-size: 14px; font-variant-numeric: tabular-nums; transition: transform 0.12s var(--ease); }
 .lvlbtn:active { transform: scale(0.92); }
 .lvlbtn.solved { background: var(--c); color: #2a2622; font-weight: 700; }
+.lvlbtn.current { box-shadow: 0 0 0 2.5px var(--ink), var(--lift-sm); font-weight: 700; animation: pulse-ring 1.8s ease-in-out infinite; }
+.lvlbtn.locked { background: var(--paper-3); color: var(--ink-3); box-shadow: none; display: grid; place-items: center; }
+@keyframes pulse-ring { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 70%, transparent), var(--lift-sm); } }
+.continue-level { display: flex; align-items: center; gap: 12px; text-align: left; margin: 2px 0 14px; padding: 14px 18px; }
+.continue-level > span { flex: 1; display: flex; flex-direction: column; font-size: 16px; }
+.continue-level small { font-size: 12px; font-weight: 400; opacity: 0.75; }
+.continue-level b { font-family: var(--serif); font-size: 20px; }
+.continue-level.done { background: var(--paper-2); border-radius: 18px; box-shadow: var(--lift-sm); color: var(--ink); }
+.continue-level.done > span { font-family: var(--serif); font-weight: 700; }
 .empty-state { border: 2px dashed var(--line); border-radius: var(--radius); padding: 18px; line-height: 1.5; font-size: 14px; }
 .empty-state h3 { margin: 0 0 6px; }
 .empty-state pre { background: var(--paper-3); padding: 10px; border-radius: 10px; overflow-x: auto; font-size: 12px; }

@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useBoardState, cellAt, boardSize, clone2 } from '../common.js';
+import { useBoardState, cellAt, useBoardSize, clone2 } from '../common.js';
 import { analyse, isSolved } from './logic.js';
 
 // One tint per tetromino shape.
@@ -14,7 +14,7 @@ export default forwardRef(function LitsBoard({ puzzle, saved, onChange, onSolved
   const [markMode, setMarkMode] = useState(false);
   const el = useRef(null);
   const drag = useRef(null);
-  const { cell, width, height } = boardSize(w, h, 420, 64);
+  const { cell, width, height } = useBoardSize(w, h, 420, 64);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,

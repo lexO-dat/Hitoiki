@@ -1,7 +1,7 @@
 // Trios: cards have 4 features × 3 variants. A trio is three cards where every feature
 // is all-equal or all-different. Find every trio on the table.
 
-const CONFIG = { standard: { cards: 9, sets: 4 }, hard: { cards: 12, sets: 5 }, expert: { cards: 12, sets: 6 } };
+const CONFIG = { tutorial: { cards: 6, sets: 1 }, standard: { cards: 9, sets: 4 }, hard: { cards: 12, sets: 5 }, expert: { cards: 12, sets: 6 } };
 
 export const isSet = (a, b, c) => [0, 1, 2, 3].every((f) => (a[f] + b[f] + c[f]) % 3 === 0);
 

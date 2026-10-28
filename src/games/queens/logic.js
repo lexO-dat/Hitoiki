@@ -1,6 +1,6 @@
 // Queens: one crown per row, column and colour region; crowns may not touch, not even diagonally.
 
-const SIZE = { standard: [6, 7], hard: [8, 8], expert: [9, 10] };
+const SIZE = { tutorial: [5, 5], standard: [6, 7], hard: [8, 8], expert: [9, 10] };
 
 function placement(n, rng) {
   // Column per row, no shared column, no diagonal adjacency between consecutive rows.

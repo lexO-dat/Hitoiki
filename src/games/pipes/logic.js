@@ -1,7 +1,7 @@
 // Pipes: rotate tiles so every pipe connects into one network fed by the source, with no open ends.
 // Tile connections are a 4-bit mask: 1 = up, 2 = right, 4 = down, 8 = left.
 
-const SIZE = { standard: [5, 5], hard: [6, 7], expert: [7, 8] };
+const SIZE = { tutorial: [3, 3], standard: [5, 5], hard: [6, 7], expert: [7, 8] };
 const DIRS = [
   [-1, 0, 1, 4],
   [0, 1, 2, 8],

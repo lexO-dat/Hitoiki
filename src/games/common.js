@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { createContext, useContext, useEffect, useRef } from 'react';
 import { useHistory } from '../lib/useHistory.js';
 
 // Shared wiring for every board: undo history, persistence and solve detection.
@@ -34,12 +34,16 @@ export function cellAt(e, el, w, h) {
 // any extra padding the board draws around itself (`pad`), so the whole board always fits.
 const SCREEN_PADDING = 36;
 const FRAME = 6;
-export const boardSize = (w, h, max = 440, reserve = 0, pad = 0) => {
-  const vw = Math.min(Math.min(window.innerWidth, 520) - SCREEN_PADDING - FRAME - pad, max);
-  const vh = Math.min(window.innerHeight * 0.58, window.innerHeight - 220 - reserve);
+export const boardSize = (w, h, max = 440, reserve = 0, pad = 0, limit = null) => {
+  const vw = Math.min(Math.min(window.innerWidth, 520) - SCREEN_PADDING - FRAME - pad, max, limit?.width ?? Infinity);
+  const vh = Math.min(window.innerHeight * 0.58, window.innerHeight - 220 - reserve, limit?.height ?? Infinity);
   const cell = Math.floor(Math.min(vw / w, vh / h));
   return { cell, width: cell * w, height: cell * h };
 };
+
+// Lets a container cap the board size (the tutorial shows a smaller board inside its sheet).
+export const BoardLimit = createContext(null);
+export const useBoardSize = (w, h, max, reserve, pad) => boardSize(w, h, max, reserve, pad, useContext(BoardLimit));
 
 // Region palette for colour-region puzzles (own palette, light pastels readable in both themes).
 export const REGION_COLORS = [

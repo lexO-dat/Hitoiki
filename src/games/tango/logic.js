@@ -2,8 +2,8 @@
 // '=' joins equal cells and '×' opposite cells.
 
 const N = 6;
-const GIVENS = { standard: 0.3, hard: 0.18, expert: 0.08 };
-const SIGNS = { standard: 0.12, hard: 0.16, expert: 0.2 };
+const GIVENS = { tutorial: 0.7, standard: 0.3, hard: 0.18, expert: 0.08 };
+const SIGNS = { tutorial: 0.1, standard: 0.12, hard: 0.16, expert: 0.2 };
 
 function validLine(line) {
   const half = line.length / 2;

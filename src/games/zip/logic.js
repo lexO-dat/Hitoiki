@@ -1,7 +1,7 @@
 // Path: draw one line through every cell, visiting the numbered cells in order.
 
-const SIZE = { standard: [5, 6], hard: [6, 7], expert: [7, 8] };
-const POINTS = { standard: [8, 10], hard: [7, 9], expert: [6, 9] };
+const SIZE = { tutorial: [4, 4], standard: [5, 6], hard: [6, 7], expert: [7, 8] };
+const POINTS = { tutorial: [4, 4], standard: [8, 10], hard: [7, 9], expert: [6, 9] };
 const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 function hamiltonPath(w, h, rng) {

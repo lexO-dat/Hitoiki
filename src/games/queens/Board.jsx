@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { useBoardState, cellAt, boardSize, REGION_COLORS, clone2 } from '../common.js';
+import { useBoardState, cellAt, useBoardSize, REGION_COLORS, clone2 } from '../common.js';
 import { conflicts, isSolved } from './logic.js';
 import { Crown } from '../../components/Icons.jsx';
 
@@ -10,7 +10,7 @@ export default forwardRef(function QueensBoard({ puzzle, saved, onChange, onSolv
   const bad = useMemo(() => conflicts(puzzle, b.state), [puzzle, b.state]);
   const el = useRef(null);
   const drag = useRef(null);
-  const { cell, width } = boardSize(n, n);
+  const { cell, width } = useBoardSize(n, n);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,

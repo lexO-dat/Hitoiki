@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
-import { useBoardState, boardSize } from '../common.js';
+import { useBoardState, useBoardSize } from '../common.js';
 import { adjacent, isSolved } from './logic.js';
 import { sfx } from '../../lib/sound.js';
 
@@ -8,7 +8,7 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
   const b = useBoardState({ initial: [], saved, onChange, isSolved: (s) => isSolved(puzzle, s), onSolved });
   const el = useRef(null);
   const drawing = useRef(false);
-  const { cell, width, height } = boardSize(w, h, 420);
+  const { cell, width, height } = useBoardSize(w, h, 420);
   const path = b.state;
   const key = (p) => p.join(',');
   const same = (a, z) => a[0] === z[0] && a[1] === z[1];

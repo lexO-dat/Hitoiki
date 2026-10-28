@@ -1,7 +1,7 @@
 // LITS: shade exactly one tetromino (L, I, T or S) in every region. All shaded cells form one
 // connected group, no 2×2 block is fully shaded, and equal shapes never touch along an edge.
 
-const SIZE = { standard: [6, 6], hard: [7, 7], expert: [8, 8] };
+const SIZE = { tutorial: [5, 5], standard: [6, 6], hard: [7, 7], expert: [8, 8] };
 const BASE = {
   L: [[0, 0], [1, 0], [2, 0], [2, 1]],
   I: [[0, 0], [1, 0], [2, 0], [3, 0]],

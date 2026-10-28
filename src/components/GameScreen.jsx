@@ -15,6 +15,7 @@ import { syncReminders } from '../lib/notify.js';
 import { syncWidget } from '../lib/widget.js';
 import { Arrow, Back, Bulb, Eraser, Help, Share, Undo } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
+import Tutorial from './Tutorial.jsx';
 
 // Rough "how much is on the board": counts filled leaves of any board state. Its change tells
 // placing (up) from erasing (down) for the sound, whatever the game.
@@ -24,7 +25,7 @@ function amount(v) {
   return v ? 1 : 0;
 }
 
-function Rules({ game, onClose }) {
+function Rules({ game, onClose, onPractice }) {
   return (
     <div className="overlay" onClick={onClose}>
       <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label={`Reglas de ${game.name}`}>
@@ -39,6 +40,9 @@ function Rules({ game, onClose }) {
         </ul>
         <button className="btn primary wide" onClick={onClose}>
           Entendido
+        </button>
+        <button className="btn wide sheet-second" onClick={onPractice}>
+          Practicar con un tablero de prueba
         </button>
       </div>
     </div>
@@ -175,7 +179,9 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
   const [hints, setHints] = useState(saved.current?.meta?.hints ?? 0);
   const [mistakes, setMistakes] = useState(saved.current?.meta?.mistakes ?? 0);
   const [done, setDone] = useState(existing ?? null);
-  const [showRules, setShowRules] = useState(() => !store.get().tutorialsSeen[game.id]);
+  // 'tutorial' the first time a game is opened, 'rules' from the ? button.
+  const [help, setHelp] = useState(() => (store.get().tutorialsSeen[game.id] ? null : 'tutorial'));
+  const showRules = help !== null;
   const [round, setRound] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
   const [fresh, setFresh] = useState(false); // solved just now (vs. reopening a solved puzzle)
@@ -205,7 +211,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
   }, [done, showRules, celebrating, visible]);
 
   const closeRules = () => {
-    setShowRules(false);
+    setHelp(null);
     store.update((s) => ({ ...s, tutorialsSeen: { ...s.tutorialsSeen, [game.id]: true } }));
   };
 
@@ -329,7 +335,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
           </span>
           {game.name}
         </h1>
-        <button className="icon-btn" onClick={() => setShowRules(true)} aria-label="Reglas">
+        <button className="icon-btn" onClick={() => setHelp('rules')} aria-label="Reglas">
           <Help />
         </button>
       </header>
@@ -381,7 +387,8 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
           <span className="hint-count">{hints ? `usadas: ${hints}` : 'gratis'}</span>
         </button>
       </div>
-      {showRules && <Rules game={game} onClose={closeRules} />}
+      {help === 'rules' && <Rules game={game} onClose={closeRules} onPractice={() => setHelp('tutorial')} />}
+      {help === 'tutorial' && <Tutorial game={game} onDone={closeRules} />}
     </div>
   );
 }

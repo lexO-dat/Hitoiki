@@ -26,7 +26,7 @@ export async function page(b, { state = {}, viewport = { width: 390, height: 844
     settings: { sound: false, notify: false, ...(state.settings ?? {}) },
     results: state.results ?? {},
     saves: {},
-    tutorialsSeen: Object.fromEntries(GAMES.map((g) => [g, true])),
+    tutorialsSeen: state.tutorialsSeen ?? Object.fromEntries(GAMES.map((g) => [g, true])),
   };
   await ctx.addInitScript((d) => {
     if (!sessionStorage.getItem('e2e-seeded')) {

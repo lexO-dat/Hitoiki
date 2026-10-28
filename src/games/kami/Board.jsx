@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
-import { useBoardState, boardSize } from '../common.js';
+import { useBoardState, useBoardSize } from '../common.js';
 import { paint, plan, isSolved, regions, solvePivot } from './logic.js';
 
 export const PAINT = ['#db5856', '#6396e7', '#54ae57', '#b376cf', '#54576c', '#70f7ca'];
@@ -10,7 +10,7 @@ export default forwardRef(function KamiBoard({ puzzle, saved, onChange, onSolved
   const b = useBoardState({ initial, saved, onChange, isSolved: (s) => isSolved(s.grid), onSolved });
   const [color, setColor] = useState(0);
   const [flash, setFlash] = useState(null);
-  const { cell, width, height } = boardSize(w, h, 400, 140);
+  const { cell, width, height } = useBoardSize(w, h, 400, 140);
   const s = b.state;
   const left = moves - s.used;
   const out = left <= 0 && !isSolved(s.grid);

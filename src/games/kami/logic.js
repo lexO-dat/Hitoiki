@@ -2,6 +2,7 @@
 // one colour within the move limit.
 
 const CONFIG = {
+  tutorial: { w: 4, h: 5, colors: 3, seeds: 5, minMoves: 2, maxMoves: 2 },
   standard: { w: 8, h: 10, colors: 3, seeds: 16, minMoves: 3, maxMoves: 5 },
   hard: { w: 9, h: 12, colors: 4, seeds: 30, minMoves: 6, maxMoves: 8 },
   expert: { w: 10, h: 13, colors: 5, seeds: 46, minMoves: 8, maxMoves: 11 },
@@ -172,7 +173,7 @@ export function generate(rng, mode = 'standard') {
     const greedy = plan(grid);
     const exact = solvePivot(grid, greedy.length);
     const solution = exact && exact.length <= greedy.length ? exact : greedy;
-    const slack = mode === 'standard' ? 1 : 0;
+    const slack = mode === 'standard' || mode === 'tutorial' ? 1 : 0;
     const result = { w, h, colors, grid, moves: Math.max(1, solution.length + slack), solution };
     if (solution.length >= cfg.minMoves && solution.length <= cfg.maxMoves) return result;
     if (!best || Math.abs(solution.length - cfg.minMoves) < Math.abs(best.moves - cfg.minMoves)) best = result;

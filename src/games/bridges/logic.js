@@ -2,6 +2,7 @@
 // many links as its number, lines never cross, and every dot joins one network.
 
 const CONFIG = {
+  tutorial: { w: 4, h: 4, islands: 4 },
   standard: { w: 6, h: 7, islands: 9 },
   hard: { w: 7, h: 9, islands: 14 },
   expert: { w: 8, h: 11, islands: 20 },

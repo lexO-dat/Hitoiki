@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
-import { useBoardState, boardSize } from '../common.js';
+import { useBoardState, useBoardSize } from '../common.js';
 import { box, conflicts, isSolved } from './logic.js';
 
 export default forwardRef(function SudokuBoard({ puzzle, saved, onChange, onSolved, onMistake }, ref) {
@@ -9,7 +9,7 @@ export default forwardRef(function SudokuBoard({ puzzle, saved, onChange, onSolv
   const [sel, setSel] = useState(() => givens.findIndex((v) => !v));
   const [notesMode, setNotesMode] = useState(false);
   const bad = useMemo(() => conflicts(b.state.values), [b.state.values]);
-  const { cell, width } = boardSize(9, 9, 440, 120);
+  const { cell, width } = useBoardSize(9, 9, 440, 120);
   const { values, notes } = b.state;
 
   const counts = useMemo(() => {

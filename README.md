@@ -143,6 +143,10 @@ Experiencia de uso:
   día avanza y el botón principal lleva directo al siguiente puzzle del día. El resultado se puede
   compartir como texto.
 - Hitos de racha (3, 7, 14, 30… días) con mensajes propios.
+- **Tutorial interactivo**: la primera vez que abres cada juego aparecen sus reglas como pasos junto a
+  un tablero de práctica pequeño del mismo juego, que resuelves con tus manos (con un botón que te
+  muestra un paso si te trabas). Al terminar se estampa el sello y pasas al puzzle real. Se puede
+  volver a practicar desde el botón ? del juego.
 - Navegación: la barra inferior queda siempre fija y una píldora se desliza al ícono activo; las
   pantallas entran con transiciones suaves (hacia el lado entre secciones, subiendo al abrir un juego)
   y se cambia de sección deslizando hacia los lados.

@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo } from 'react';
-import { useBoardState, boardSize, clone2 } from '../common.js';
+import { useBoardState, useBoardSize, clone2 } from '../common.js';
 import { errors, isSolved } from './logic.js';
 import { Sun, Moon } from '../../components/Icons.jsx';
 
@@ -7,7 +7,7 @@ export default forwardRef(function TangoBoard({ puzzle, saved, onChange, onSolve
   const { n, givens, cons, solution } = puzzle;
   const b = useBoardState({ initial: clone2(givens), saved, onChange, isSolved: (s) => isSolved(puzzle, s), onSolved });
   const bad = useMemo(() => errors(puzzle, b.state), [puzzle, b.state]);
-  const { cell, width } = boardSize(n, n, 420);
+  const { cell, width } = useBoardSize(n, n, 420);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,

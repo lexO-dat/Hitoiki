@@ -1,6 +1,6 @@
 // Classic 9×9 sudoku with a unique solution.
 
-const GIVENS = { standard: 36, hard: 30, expert: 25 };
+const GIVENS = { tutorial: 74, standard: 36, hard: 30, expert: 25 };
 const box = (r, c) => Math.floor(r / 3) * 3 + Math.floor(c / 3);
 
 function solve(grid, rng, limit = 2) {

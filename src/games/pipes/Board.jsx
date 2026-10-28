@@ -1,5 +1,5 @@
 import { forwardRef, memo, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
-import { useBoardState, boardSize, clone2 } from '../common.js';
+import { useBoardState, useBoardSize, clone2 } from '../common.js';
 import { connected, isSolved, rotate } from './logic.js';
 
 const ARMS = [
@@ -36,7 +36,7 @@ export default forwardRef(function PipesBoard({ puzzle, saved, onChange, onSolve
   const { w, h, source, tiles, solved } = puzzle;
   const b = useBoardState({ initial: tiles, saved, onChange, isSolved: (s) => isSolved(puzzle, s), onSolved });
   const { seen } = useMemo(() => connected(puzzle, b.state), [puzzle, b.state]);
-  const { cell, width } = boardSize(w, h, 420);
+  const { cell, width } = useBoardSize(w, h, 420);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,

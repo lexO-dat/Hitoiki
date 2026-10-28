@@ -316,6 +316,41 @@ h3.section { font-size: 17px; margin: 20px 2px 10px; display: flex; align-items:
 @keyframes fade { from { opacity: 0; } }
 @keyframes rise { from { transform: translateY(60px); opacity: 0; } }
 
+/* Interactive tutorial */
+.tutorial-overlay { place-items: stretch; }
+.tutorial {
+  width: min(520px, 100%); margin: 0 auto; height: 100%; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+  background: var(--paper); padding: calc(14px + env(safe-area-inset-top)) 20px calc(18px + env(safe-area-inset-bottom));
+  animation: rise 0.32s var(--ease);
+}
+.tutorial-head { display: flex; align-items: center; gap: 12px; }
+.tutorial-head > div { flex: 1; }
+.tutorial-head h2 { margin: 0; font-size: 24px; }
+.tutorial-head .head-kanji { width: 40px; height: 40px; font-size: 22px; border-radius: 12px; }
+.tutorial-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 6px; }
+.tutorial-steps li {
+  counter-increment: step; position: relative; padding: 9px 12px 9px 40px; border-radius: 14px; font-size: 13.5px; line-height: 1.4;
+  color: var(--ink-2); background: transparent; transition: background 0.25s var(--ease), color 0.25s;
+}
+.tutorial-steps li::before {
+  content: counter(step); position: absolute; left: 10px; top: 8px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700; background: var(--paper-3); color: var(--ink-2); transition: background 0.25s, color 0.25s;
+}
+.tutorial-steps li.on { background: var(--paper-2); color: var(--ink); box-shadow: var(--lift-sm); }
+.tutorial-steps li.on::before { background: var(--c); color: #2a2622; }
+.tutorial-steps li.seen::before { background: var(--cbg); color: #2a2622; }
+.tutorial-board { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 4px 0; }
+.tutorial-board.done { opacity: 0.55; pointer-events: none; transition: opacity 0.4s; }
+.tutorial-actions { display: flex; align-items: center; gap: 12px; }
+.tutorial-actions .muted { flex: 1; margin: 0; }
+.tutorial-done { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; animation: pop 0.45s var(--spring); }
+.tutorial-done > div { flex: 1; min-width: 0; }
+.tutorial-done b { display: block; font-family: var(--serif); font-size: 20px; }
+.tutorial-done span { font-size: 13px; color: var(--ink-2); }
+.tutorial-done .btn { flex-basis: 100%; }
+.tutorial-done .linklike { flex-basis: 100%; text-align: center; }
+.sheet-second { margin-top: 10px; }
+
 /* ---------------------------------------------------------------- result */
 .result-screen { background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--cbg) 55%, transparent), transparent 70%); }
 :root[data-theme='dark'] .result-screen { background: radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--c) 18%, transparent), transparent 70%); }

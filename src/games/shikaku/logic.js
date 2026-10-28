@@ -1,7 +1,7 @@
 // Shikaku: split the grid into rectangles, each containing exactly one number equal to its area.
 
-const SIZE = { standard: [[6, 6], [7, 7]], hard: [[8, 7], [9, 8]], expert: [[10, 8], [12, 10]] };
-const MAX_AREA = { standard: 8, hard: 10, expert: 12 };
+const SIZE = { tutorial: [[4, 4], [4, 4]], standard: [[6, 6], [7, 7]], hard: [[8, 7], [9, 8]], expert: [[10, 8], [12, 10]] };
+const MAX_AREA = { tutorial: 4, standard: 8, hard: 10, expert: 12 };
 
 function partition(w, h, rng, maxArea) {
   const owner = Array.from({ length: h }, () => Array(w).fill(-1));

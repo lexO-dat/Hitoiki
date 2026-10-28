@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useBoardState, boardSize } from '../common.js';
+import { useBoardState, useBoardSize } from '../common.js';
 import { crosses, degrees, edgeKey, isSolved, neighbours } from './logic.js';
 
 export default forwardRef(function BridgesBoard({ puzzle, saved, onChange, onSolved, onMistake, color }, ref) {
@@ -11,7 +11,7 @@ export default forwardRef(function BridgesBoard({ puzzle, saved, onChange, onSol
   const [msg, setMsg] = useState('');
   const svg = useRef(null);
   const press = useRef(null);
-  const { cell, width, height } = boardSize(w, h, 420, 0, 12);
+  const { cell, width, height } = useBoardSize(w, h, 420, 0, 12);
   const links = b.state;
   const pos = (i) => [islands[i].c * cell + cell / 2, islands[i].r * cell + cell / 2];
 

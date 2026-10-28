@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { useBoardState, cellAt, boardSize, REGION_COLORS } from '../common.js';
+import { useBoardState, cellAt, useBoardSize, REGION_COLORS } from '../common.js';
 import { isSolved, rectStatus } from './logic.js';
 
 const normRect = ([r1, c1], [r2, c2]) => ({ r: Math.min(r1, r2), c: Math.min(c1, c2), h: Math.abs(r1 - r2) + 1, w: Math.abs(c1 - c2) + 1 });
@@ -11,7 +11,7 @@ export default forwardRef(function ShikakuBoard({ puzzle, saved, onChange, onSol
   const b = useBoardState({ initial: [], saved, onChange, isSolved: (s) => isSolved(puzzle, s), onSolved });
   const el = useRef(null);
   const [drag, setDrag] = useState(null);
-  const { cell, width, height } = boardSize(w, h, 440);
+  const { cell, width, height } = useBoardSize(w, h, 440);
   const rects = b.state;
 
   useImperativeHandle(ref, () => ({

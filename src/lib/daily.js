@@ -38,3 +38,15 @@ export function praise({ game, mode, time, hints, mistakes }) {
   if (r > 2) return ['¡Perseverancia!', 'Este puzzle dio pelea, y ganaste tú.'];
   return pick([['¡Bien hecho!', 'Concentración y constancia. Eso es lo que importa.'], ['¡Buen trabajo!', 'Otro puzzle resuelto.']]);
 }
+
+// Every daily puzzle of a date, featured first. Sudoku only exists for today.
+export function dailyOrder(date, today = date) {
+  const { featured, others } = dailySelection(date);
+  return date === today ? [...featured, ...others, 'sudoku'] : [...featured, ...others];
+}
+
+// The puzzle to play next: one already started (unfinished things pull us back), else the first unsolved.
+export function nextDaily(s, date, mode, exclude) {
+  const ids = dailyOrder(date).filter((id) => id !== exclude && !s.results[`${date}|${mode}|${id}`]);
+  return ids.find((id) => s.saves[`${date}|${mode}|${id}`]) ?? ids[0] ?? null;
+}

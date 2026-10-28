@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { GAMES, GAME_BY_ID } from '../data/games.js';
 import { COLLECTION_LABEL, DIFFICULTY_LABEL, loadIndex, loadLevels } from '../lib/levels.js';
 import { useStore } from '../lib/storage.js';
-import { Back, Chart, Gear } from './Icons.jsx';
+import { Back, Gear } from './Icons.jsx';
 import Nav from './Nav.jsx';
 import Thumb from './Thumb.jsx';
 
@@ -29,9 +29,6 @@ export function ClassicHome({ navigate }) {
         <span />
         <h1>Niveles</h1>
         <div className="right">
-          <button className="icon-btn" onClick={() => navigate('/stats')} aria-label="Estadísticas">
-            <Chart />
-          </button>
           <button className="icon-btn" onClick={() => navigate('/settings')} aria-label="Ajustes">
             <Gear />
           </button>
@@ -56,13 +53,21 @@ export function ClassicHome({ navigate }) {
               const solved = solvedCount(g.id);
               return (
                 <button key={g.id} className="card" style={{ '--c': g.main, '--cbg': g.bg }} onClick={() => navigate(`/lvl/${g.id}`)}>
-                  <div>
+                  <span className="card-kanji" aria-hidden="true">
+                    {g.kanji}
+                  </span>
+                  <span className="card-thumb">
+                    <Thumb game={g} />
+                  </span>
+                  <span className="card-body">
                     <h4>{g.name}</h4>
                     <p>{total.toLocaleString('es')} niveles</p>
-                  </div>
-                  <Thumb game={g} />
-                  <span className="status">
-                    {solved} / {total} resueltos
+                    <span className="meter" aria-label={`${solved} de ${total} resueltos`}>
+                      <i style={{ width: `${Math.max(solved ? 2 : 0, (solved / total) * 100)}%` }} />
+                    </span>
+                  </span>
+                  <span className="state">
+                    {solved}/{total}
                   </span>
                 </button>
               );

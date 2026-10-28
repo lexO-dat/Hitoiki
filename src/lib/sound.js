@@ -361,6 +361,11 @@ export const sfx = {
     [0, 7, 12, 16].forEach((s, i) => play(hz(s), { when: i * 0.14, gain: 0.1, inst: 'bell', force: true, dur: 1.8, pan: 0 }));
     play(hz(-12), { gain: 0.08, inst: 'harp', force: true, dur: 2.4, pan: 0 });
   },
+  // The hanko seal pressing onto the paper: a soft, low wooden knock.
+  stamp() {
+    play(hz(-12), { gain: 0.16, inst: 'wood', dur: 0.22, pan: 0, force: true, dark: true });
+    play(hz(-5), { when: 0.015, gain: 0.07, inst: 'wood', dur: 0.15, pan: 0, force: true });
+  },
   // Volume slider preview.
   preview() {
     [0, 4, 7, 14].forEach((s, i) => play(hz(s), { when: i * 0.07, gain: 0.12, force: true, dur: 1 }));

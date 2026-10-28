@@ -15,7 +15,7 @@ export function showFatalError(err, { soft = false } = {}) {
       box = document.createElement('div');
       box.id = 'fatal-error';
       box.style.cssText =
-        'position:fixed;inset:0;padding:24px;background:#f6f2ef;color:#303030;font:14px/1.5 monospace;overflow:auto;z-index:9999';
+        'position:fixed;inset:0;padding:24px;background:#f3eee4;color:#2a2622;font:14px/1.5 monospace;overflow:auto;z-index:9999';
       box.innerHTML = '<h2 style="font-family:Georgia,serif;margin:0 0 8px">Hitoiki no pudo iniciar</h2><p>Envía una captura de esta pantalla.</p><pre id="fatal-error-text" style="white-space:pre-wrap;background:#fff;padding:12px;border-radius:8px;border:1px solid #e0dcd9"></pre>';
       document.body.appendChild(box);
     }

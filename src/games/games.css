@@ -1,7 +1,7 @@
 /* Board styles shared by all puzzles. Board text is always dark because cells are light-tinted. */
 .qgrid, .tgrid, .zgrid, .pgrid, .lgrid, .kamigrid, .sgrid {
-  display: grid; position: relative; border: 3px solid var(--stroke); border-radius: 12px; overflow: hidden;
-  box-shadow: 0 5px 0 var(--shadow); background: #fff;
+  display: grid; position: relative; border: 2.5px solid var(--stroke); border-radius: 14px; overflow: hidden;
+  box-shadow: var(--lift); background: #fff;
 }
 /* Boards are sized in whole cells; borders sit outside that area. */
 .qgrid, .tgrid, .zgrid, .pgrid, .lgrid, .kamigrid, .sgrid, .kgrid, .bsvg { box-sizing: content-box; }
@@ -60,7 +60,7 @@
 .sudoku-actions .btn { padding: 8px; font-size: 13px; }
 
 /* Shikaku */
-.kgrid { border: 3px solid var(--stroke); border-radius: 12px; overflow: hidden; box-shadow: 0 5px 0 var(--shadow); background: #fefefe; }
+.kgrid { border: 2.5px solid var(--stroke); border-radius: 14px; overflow: hidden; box-shadow: var(--lift); background: #fefefe; }
 :root[data-theme='dark'] .kgrid { background: #30373d; }
 .kgrid svg { display: block; }
 .kcell { fill: transparent; stroke: #e0dcd9; stroke-width: 0.5; }
@@ -89,7 +89,7 @@
 
 /* Bridges */
 .bridges { display: flex; flex-direction: column; align-items: center; }
-.bsvg { border: 3px solid var(--stroke); border-radius: 12px; background: #fff; box-shadow: 0 5px 0 var(--shadow); }
+.bsvg { border: 2.5px solid var(--stroke); border-radius: 14px; background: #fff; box-shadow: var(--lift); }
 :root[data-theme='dark'] .bsvg { background: #30373d; }
 .bdot { fill: #ddd7d3; }
 .bline { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
@@ -108,8 +108,8 @@
 .kamicell.flash { animation: blink 0.4s 3; }
 @keyframes blink { 50% { filter: brightness(1.6); } }
 .palette { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.paint { width: 46px; height: 46px; border-radius: 12px; border: 2.5px solid #303030; box-shadow: 0 3px 0 var(--shadow); }
-.paint.sel { transform: translateY(-5px); box-shadow: 0 8px 0 var(--shadow); outline: 3px solid var(--text); outline-offset: 2px; }
+.paint { width: 46px; height: 46px; border-radius: 12px; border: 2.5px solid #303030; box-shadow: var(--lift-sm); }
+.paint.sel { transform: translateY(-5px); box-shadow: var(--lift); outline: 3px solid var(--text); outline-offset: 2px; }
 
 /* Code */
 /* The attempts list scrolls on its own so the palette and toolbar always stay on screen. */
@@ -125,7 +125,7 @@
 .mind-rows.dense .peg { width: 30px; height: 30px; }
 .mind-row { flex: none; }
 .mind-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--soft-stroke); }
-.mind-row.current { border: 2px solid var(--stroke); box-shadow: 0 3px 0 var(--shadow); }
+.mind-row.current { border: 2px solid var(--stroke); box-shadow: var(--lift-sm); }
 .mind-row.reveal { background: var(--cbg); }
 .mind-n { width: 20px; font-size: 12px; color: var(--text-2); }
 .peg { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #303030; padding: 0; flex: none; }
@@ -137,7 +137,7 @@
 .mind-fb i.near { background: var(--bg); border-color: var(--text); }
 .mind-left { margin-left: auto; font-size: 11px; color: var(--text-2); }
 .mind .palette { flex: none; }
-.mind .palette .peg { width: 42px; height: 42px; box-shadow: 0 3px 0 var(--shadow); }
+.mind .palette .peg { width: 42px; height: 42px; box-shadow: var(--lift-sm); }
 .mind > .btn, .mind > .message { flex: none; }
 
 /* Trios */
@@ -145,7 +145,7 @@
 .sets-count { font-family: var(--serif); font-weight: 600; font-size: 20px; }
 .setgrid { display: grid; gap: 8px; width: 100%; max-width: 420px; }
 .setgrid.cols-3, .setgrid.cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.setcard { min-width: 0; aspect-ratio: 1.45; border: 2px solid #303030; border-radius: 10px; background: #fff; padding: 4px; box-shadow: 0 3px 0 var(--shadow); transition: transform 0.1s; }
+.setcard { min-width: 0; aspect-ratio: 1.45; border: 2px solid #303030; border-radius: 10px; background: #fff; padding: 4px; box-shadow: var(--lift-sm); transition: transform 0.1s; }
 :root[data-theme='dark'] .setcard { background: #f0f6fc; }
 .setcard.sel { transform: translateY(-4px); box-shadow: 0 7px 0 var(--c); border-color: var(--c); outline: 2px solid var(--c); }
 .setcard.found { opacity: 0.75; }
@@ -204,11 +204,11 @@
   100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 60px)) rotate(var(--rot)); opacity: 0; }
 }
 .solved-badge {
-  position: relative; font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 40px;
-  color: #303030; background: var(--bg); border: 2.5px solid var(--stroke); border-radius: 16px; padding: 4px 22px 8px;
-  box-shadow: 0 5px 0 var(--shadow); animation: badge 1.8s cubic-bezier(0.2, 1.6, 0.4, 1) 0.25s both;
+  position: relative; display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-weight: 700; font-size: 30px;
+  color: var(--ink); background: var(--paper-2); border-radius: 999px; padding: 8px 24px 8px 10px;
+  box-shadow: var(--lift); animation: badge 1.8s cubic-bezier(0.2, 1.6, 0.4, 1) 0.25s both;
 }
-:root[data-theme='dark'] .solved-badge { color: var(--text); }
+.solved-badge span { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; border: 3px solid var(--shu); color: var(--shu); font-size: 26px; transform: rotate(-6deg); }
 @keyframes badge { 0% { transform: scale(0.3) rotate(-8deg); opacity: 0; } 25% { transform: scale(1) rotate(-3deg); opacity: 1; } 85% { opacity: 1; } 100% { transform: scale(1.05) rotate(-3deg); opacity: 0; } }
 .celebrate .qgrid, .celebrate .tgrid, .celebrate .zgrid, .celebrate .pgrid, .celebrate .lgrid,
 .celebrate .kamigrid, .celebrate .kgrid, .celebrate .bsvg, .celebrate .sudoku, .celebrate .sets, .celebrate .mind { pointer-events: none; }

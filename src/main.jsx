@@ -1,12 +1,13 @@
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 // Fonts are bundled with the app so it looks the same offline (latin subset covers Spanish).
-import '@fontsource/eb-garamond/latin-500.css';
-import '@fontsource/eb-garamond/latin-600.css';
-import '@fontsource/eb-garamond/latin-600-italic.css';
-import '@fontsource/ibm-plex-mono/latin-400.css';
-import '@fontsource/ibm-plex-mono/latin-500.css';
-import '@fontsource/ibm-plex-mono/latin-600.css';
+// Shippori Mincho for titles, Zen Maru Gothic for text; the few kanji come from a tiny subset (fonts.css).
+import '@fontsource/shippori-mincho/latin-600.css';
+import '@fontsource/shippori-mincho/latin-700.css';
+import '@fontsource/zen-maru-gothic/latin-400.css';
+import '@fontsource/zen-maru-gothic/latin-500.css';
+import '@fontsource/zen-maru-gothic/latin-700.css';
+import './fonts/fonts.css';
 import './styles.css';
 import './games/games.css';
 

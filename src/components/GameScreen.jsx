@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { praise } from '../lib/daily.js';
 import { formatTime } from '../lib/dates.js';
-import { clearProgress, completedOn, computeStreak, saveProgress, saveResult, store, STREAK_REQUIRED, useStore } from '../lib/storage.js';
+import { clearProgress, completedOn, computeStreak, gameOfKey, saveProgress, saveResult, store, STREAK_REQUIRED, useStore } from '../lib/storage.js';
+import { resultText, shareText } from '../lib/share.js';
+import Seal from './Seal.jsx';
+import Enso from './Enso.jsx';
 import { todayKey } from '../lib/dates.js';
 import { vibrate } from '../lib/theme.js';
 import { sfx } from '../lib/sound.js';
 import Celebration from './Celebration.jsx';
 import { syncReminders } from '../lib/notify.js';
-import { Back, Bulb, Eraser, Flame, Help, Play, Undo } from './Icons.jsx';
+import { Arrow, Back, Bulb, Eraser, Help, Share, Undo } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 
 // Rough "how much is on the board": counts filled leaves of any board state. Its change tells
@@ -39,58 +42,106 @@ function Rules({ game, onClose }) {
   );
 }
 
-function Result({ game, mode, subtitle, modeLabel, result, onBack, onReplay, next, showStreak }) {
+const MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365];
+
+function Result({ game, mode, subtitle, modeLabel, result, storageKey, onBack, onReplay, next, showStreak, fresh }) {
   const s = useStore();
   const { streak } = computeStreak(s);
   const [title, statement] = praise({ game: game.id, mode, ...result });
+  const [shared, setShared] = useState('');
+  const perfect = !result.hints && !result.mistakes;
+  // Compare with every other solve of this game: a record or the first time are worth celebrating.
+  // Records only count solves without hints.
+  const previous = Object.entries(s.results)
+    .filter(([k, v]) => k !== storageKey && gameOfKey(k) === game.id && !v.hints)
+    .map(([, v]) => v.time);
+  const best = previous.length ? Math.min(...previous) : null;
+  const record = result.hints ? null : best === null ? 'first' : result.time < best ? 'record' : null;
+  const date = showStreak ? storageKey.split('|')[0] : null;
+  const dayDone = date ? Math.min(completedOn(s, date), STREAK_REQUIRED) : 0;
+  const milestone = fresh && showStreak && dayDone === STREAK_REQUIRED && MILESTONES.includes(streak) ? streak : null;
+
+  useEffect(() => {
+    if (fresh) sfx.stamp();
+  }, [fresh]);
+
+  const share = async () => {
+    const r = await shareText(resultText({ game, modeLabel, subtitle, result, streak: showStreak ? streak : 0 }));
+    setShared(r === 'copied' ? 'Copiado al portapapeles' : r === 'failed' ? 'No se pudo compartir' : '');
+  };
+
   return (
-    <div className="screen" style={{ '--c': game.main }}>
+    <div className="screen result-screen" style={{ '--c': game.main, '--cbg': game.bg }}>
       <div className="result">
-        <div className="game-meta">{subtitle}</div>
-        <Thumb game={game} className="thumb big" />
-        <div className="praise">{title}</div>
+        <p className="eyebrow">
+          {game.name} · {modeLabel} · {subtitle}
+        </p>
+        <Seal kanji={game.kanji} size={104} stamp={fresh} title={`${game.name} resuelto`} />
+        <h1 className="praise">{title}</h1>
         <p className="statement">{statement}</p>
-        <div className="stats">
-          <div>
-            <small>Completado en</small>
-            <b>{formatTime(result.time)}</b>
-            <small>{modeLabel}</small>
+        <div className="result-stats">
+          <div className="big">
+            <small>Tiempo</small>
+            <b className="num">{formatTime(result.time)}</b>
+            {record === 'record' && <span className="badge shu">Nuevo récord</span>}
+            {record === 'first' && <span className="badge">Primera vez</span>}
+            {!record && best !== null && <span className="muted">Tu mejor: {formatTime(best)}</span>}
           </div>
           <div>
-            <small>Pistas · Errores</small>
-            <b>
-              {result.hints} · {result.mistakes}
-            </b>
-            {showStreak && (
-              <small>
-                <Flame width="14" height="14" style={{ verticalAlign: -2 }} /> racha {streak}
-              </small>
-            )}
+            <small>Pistas</small>
+            <b className="num">{result.hints}</b>
+          </div>
+          <div>
+            <small>Errores</small>
+            <b className="num">{result.mistakes}</b>
           </div>
         </div>
-        {next ? (
-          <button className="btn primary wide" onClick={next.onClick}>
-            {next.label} <Play width="18" height="18" />
-          </button>
-        ) : (
-          <button className="btn primary wide" onClick={onBack}>
-            Continuar <Play width="18" height="18" />
-          </button>
+        {perfect && <p className="perfect">✦ Perfecto: sin pistas ni errores</p>}
+        {showStreak && (
+          <div className="day-progress">
+            <Enso value={dayDone} size={58} animateFrom={fresh ? dayDone - 1 : undefined} />
+            <div>
+              <b>{dayDone >= STREAK_REQUIRED ? `Racha de ${streak} ${streak === 1 ? 'día' : 'días'}` : `${dayDone} de ${STREAK_REQUIRED} para tu racha`}</b>
+              <small>
+                {dayDone >= STREAK_REQUIRED
+                  ? 'El día de hoy ya está sellado.'
+                  : STREAK_REQUIRED - dayDone === 1
+                    ? '¡Solo uno más!'
+                    : `Te faltan ${STREAK_REQUIRED - dayDone}.`}
+              </small>
+            </div>
+          </div>
         )}
-        {next && (
-          <button className="btn wide" onClick={onBack}>
-            Volver
-          </button>
+        {milestone && (
+          <div className="milestone" role="status">
+            <b>¡{milestone} días seguidos!</b>
+            {milestone % 7 === 0 && <span>Ganaste un día de descanso: si un día no puedes jugar, tu racha te espera.</span>}
+          </div>
         )}
-        <button className="btn wide" onClick={onReplay}>
-          Jugar de nuevo
-        </button>
+        <div className="result-actions">
+          <button className="btn primary wide" onClick={next ? next.onClick : onBack}>
+            {next ? next.label : 'Continuar'} <Arrow width="18" height="18" />
+          </button>
+          <div className="pair">
+            <button className="btn" onClick={share}>
+              <Share width="18" height="18" /> Compartir
+            </button>
+            <button className="btn" onClick={onReplay}>
+              <Undo width="18" height="18" /> Repetir
+            </button>
+          </div>
+          {next && (
+            <button className="linklike" onClick={onBack}>
+              Volver
+            </button>
+          )}
+          {shared && <p className="muted">{shared}</p>}
+        </div>
       </div>
     </div>
   );
 }
 
-// Generic puzzle screen shared by the daily, infinite and classic-level modes.
 export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, subtitle, onBack, next, showStreak = false }) {
   const settings = useStore((s) => s.settings);
   const existing = useStore((s) => s.results[storageKey]);
@@ -103,6 +154,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
   const [showRules, setShowRules] = useState(() => !store.get().tutorialsSeen[game.id]);
   const [round, setRound] = useState(0);
   const [celebrating, setCelebrating] = useState(false);
+  const [fresh, setFresh] = useState(false); // solved just now (vs. reopening a solved puzzle)
   const wrap = useRef(null);
   const meta = useRef({ time: elapsed, hints, mistakes });
   meta.current = { time: elapsed, hints, mistakes };
@@ -173,6 +225,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     // Let the board celebrate before switching to the result screen.
     setTimeout(() => {
       setCelebrating(false);
+      setFresh(true);
       setDone(result);
     }, 1900);
   }, [storageKey, showStreak]);
@@ -210,6 +263,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     setHints(0);
     setMistakes(0);
     setDone(null);
+    setFresh(false);
     setRound((r) => r + 1);
   };
 
@@ -221,6 +275,8 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
         subtitle={subtitle}
         modeLabel={modeLabel}
         result={done}
+        storageKey={storageKey}
+        fresh={fresh}
         onBack={onBack}
         onReplay={replay}
         next={next}
@@ -235,14 +291,23 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
         <button className="icon-btn" onClick={onBack} aria-label="Volver">
           <Back />
         </button>
-        <h1>{game.name}</h1>
+        <h1>
+          <span className="head-kanji" aria-hidden="true">
+            {game.kanji}
+          </span>
+          {game.name}
+        </h1>
         <button className="icon-btn" onClick={() => setShowRules(true)} aria-label="Reglas">
           <Help />
         </button>
       </header>
       <div className="game-meta">
         <span className={`mode ${mode}`}>{modeLabel}</span>
-        {settings.showTimer && <span aria-label="Tiempo">{formatTime(elapsed)}</span>}
+        {settings.showTimer && (
+          <span className="timer num" aria-label="Tiempo">
+            {formatTime(elapsed)}
+          </span>
+        )}
         <span>{subtitle}</span>
       </div>
       <div ref={wrap} className={`board-wrap${celebrating ? ' celebrate' : ''}`}>

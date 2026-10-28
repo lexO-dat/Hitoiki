@@ -1,0 +1,10 @@
+/* The kanji used by the UI (brand, game seals, calendar), cut from Shippori Mincho Bold by
+   scripts/subset-kanji.py. Declared under the same family so titles mix latin and kanji seamlessly. */
+@font-face {
+  font-family: 'Shippori Mincho';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 900;
+  src: url(./hitoiki-kanji.woff2) format('woff2');
+  unicode-range: U+4E00-9FFF;
+}

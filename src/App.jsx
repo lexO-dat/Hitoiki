@@ -6,7 +6,7 @@ import Stats from './components/Stats.jsx';
 import InfiniteHome from './components/InfiniteHome.jsx';
 import { ClassicHome, ClassicList } from './components/Classic.jsx';
 import { GAME_BY_ID, MODES } from './data/games.js';
-import { getPuzzle } from './lib/daily.js';
+import { getPuzzle, nextDaily } from './lib/daily.js';
 import { formatTime, longDate } from './lib/dates.js';
 import { useToday } from './lib/useToday.js';
 import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/levels.js';
@@ -140,6 +140,12 @@ export default function App() {
     window.location.hash = path;
   };
 
+  // After a daily puzzle: straight into the next one of the day (keeps the flow going).
+  const dailyNext = (d, m, g) => {
+    const id = nextDaily(store.get(), d, m, g);
+    return id ? { label: `Siguiente: ${GAME_BY_ID[id].name}`, onClick: () => navigate(`/play/${d}/${m}/${id}`) } : undefined;
+  };
+
   const [page, ...args] = route;
   let content;
   if (page === 'play' && args.length === 3 && GAME_BY_ID[args[2]]) {
@@ -161,6 +167,7 @@ export default function App() {
           modeLabel={modeLabel(m)}
           subtitle={longDate(d)}
           onBack={() => navigate('/')}
+          next={dailyNext(d, m, g)}
           showStreak
         />
       );

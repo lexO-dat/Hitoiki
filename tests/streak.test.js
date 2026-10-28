@@ -16,10 +16,27 @@ test('late solves do not count toward the day or the streak', () => {
   const s = migrate({ results: { ...day('2026-10-26'), ...day('2026-10-27', '2026-10-28'), ...day('2026-10-28') } });
   assert.equal(completedOn(s, '2026-10-27'), 0);
   assert.equal(completedOn(s, '2026-10-28'), 4);
-  assert.deepEqual(computeStreak(s, '2026-10-28'), { streak: 1, best: 1 });
+  assert.equal(computeStreak(s, '2026-10-28').streak, 1);
 });
 
 test('consecutive same-day solves build the streak', () => {
   const s = migrate({ results: { ...day('2026-10-26'), ...day('2026-10-27'), ...day('2026-10-28', '2026-10-28', 2) } });
-  assert.deepEqual(computeStreak(s, '2026-10-28'), { streak: 2, best: 2 });
+  assert.equal(computeStreak(s, '2026-10-28').streak, 2);
+});
+
+test('a week of streak earns a rest day that covers one missed day', () => {
+  const week = ['2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'];
+  const results = Object.assign({}, ...week.map((d) => day(d)), day('2026-10-09'));
+  const s = migrate({ results });
+  const r = computeStreak(s, '2026-10-09');
+  assert.equal(r.streak, 8);
+  assert.equal(r.rests, 0);
+  assert.deepEqual([...r.restDays], ['2026-10-08']);
+});
+
+test('without rests a missed day resets the streak', () => {
+  const s = migrate({ results: { ...day('2026-10-01'), ...day('2026-10-03') } });
+  const r = computeStreak(s, '2026-10-03');
+  assert.equal(r.streak, 1);
+  assert.equal(r.best, 1);
 });

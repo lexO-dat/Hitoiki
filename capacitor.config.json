@@ -3,7 +3,7 @@
   "appName": "Hitoiki",
   "webDir": "dist",
   "android": {
-    "backgroundColor": "#f6f2ef"
+    "backgroundColor": "#f3eee4"
   },
   "plugins": {
     "LocalNotifications": {

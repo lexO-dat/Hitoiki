@@ -1,6 +1,6 @@
 import { GAMES, MODES } from '../data/games.js';
 import { useStore } from '../lib/storage.js';
-import { Chart, Gear } from './Icons.jsx';
+import { Gear } from './Icons.jsx';
 import Nav from './Nav.jsx';
 import Thumb from './Thumb.jsx';
 
@@ -20,18 +20,15 @@ export default function InfiniteHome({ mode, setMode, navigate }) {
         <span />
         <h1>Infinito</h1>
         <div className="right">
-          <button className="icon-btn" onClick={() => navigate('/stats')} aria-label="Estadísticas">
-            <Chart />
-          </button>
           <button className="icon-btn" onClick={() => navigate('/settings')} aria-label="Ajustes">
             <Gear />
           </button>
         </div>
       </header>
       <p className="lead">Niveles sin fin generados al momento. Cada nivel resuelto desbloquea el siguiente.</p>
-      <div className="tabs" role="group" aria-label="Dificultad">
+      <div className="seg-tabs" role="group" aria-label="Dificultad">
         {MODES.map((m) => (
-          <button key={m.id} className={`tab ${m.id}`} aria-pressed={mode === m.id} style={{ '--tab-color': m.color }} onClick={() => setMode(m.id)}>
+          <button key={m.id} className={m.id} aria-pressed={mode === m.id} onClick={() => setMode(m.id)}>
             {m.label}
           </button>
         ))}
@@ -41,9 +38,11 @@ export default function InfiniteHome({ mode, setMode, navigate }) {
           const done = infiniteProgress(results, g.id, mode);
           return (
             <button key={g.id} className="mini" style={{ '--c': g.main, '--cbg': g.bg }} onClick={() => navigate(`/inf/${mode}/${g.id}/${done + 1}`)}>
-              <Thumb game={g} />
+              <span className="mini-thumb">
+                <Thumb game={g} />
+              </span>
               <h4>{g.name}</h4>
-              <span className="status">Nivel {done + 1}</span>
+              <span className="mini-state">{done ? `${done} resueltos · nivel ${done + 1}` : 'Nivel 1'}</span>
             </button>
           );
         })}

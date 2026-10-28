@@ -87,9 +87,11 @@ export function useStore(selector = (s) => s) {
 // Keys: daily `${date}|${mode}|${game}`, infinite `inf|${mode}|${game}|${n}`, classic `lvl|${game}|${id}`.
 export const resultKey = (date, mode, game) => `${date}|${mode}|${game}`;
 
+// Replaying a solved puzzle keeps the better result (a slower replay never loses the record or the day's seal).
 export function saveResult(k, result) {
   store.update((s) => {
-    s.results[k] = { ...result, solvedAt: Date.now() };
+    const prev = s.results[k];
+    s.results[k] = prev && prev.time <= result.time ? prev : { ...result, solvedAt: Date.now() };
     delete s.saves[k];
     return s;
   });
@@ -102,10 +104,10 @@ export function saveProgress(k, data) {
   });
 }
 
+// Start a board again from scratch. Results are kept: they only improve through saveResult.
 export function clearProgress(k) {
   store.update((s) => {
     delete s.saves[k];
-    delete s.results[k];
     return s;
   });
 }
@@ -121,24 +123,44 @@ export function completedOn(s, date) {
   return Object.entries(s.results).filter(([k, r]) => k.startsWith(date + '|') && countsForDay(k, r)).length;
 }
 
+export const REST_EVERY = 7; // streak days that earn one rest day
+export const MAX_RESTS = 2;
+
+// Walks the calendar from the first completed day. A day counts once STREAK_REQUIRED puzzles were
+// solved on it. Every REST_EVERY streak days earn a rest (up to MAX_RESTS): a missed day then uses
+// one instead of breaking the streak, so one bad day does not erase weeks of habit.
+// Returns { streak, best, rests (available now), restDays (Set of covered dates) }.
 export function computeStreak(s, today = todayKey()) {
-  // A day counts once STREAK_REQUIRED puzzles are solved in any mode.
   const done = (d) => completedOn(s, d) >= STREAK_REQUIRED;
-  let day = done(today) ? today : addDays(today, -1);
+  const days = Object.keys(s.results)
+    .map((k) => k.split('|')[0])
+    .filter((d) => /^\d{4}-\d\d-\d\d$/.test(d) && d <= today && done(d))
+    .sort();
   let streak = 0;
-  while (done(day)) {
-    streak++;
-    day = addDays(day, -1);
-  }
   let best = 0;
-  let run = 0;
-  const days = [...new Set(Object.keys(s.results).map((k) => k.split('|')[0]))].filter((d) => /^\d{4}-\d\d-\d\d$/.test(d)).sort();
-  let prev = null;
-  for (const d of days) {
-    if (!done(d)) continue;
-    run = prev && addDays(prev, 1) === d ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = d;
+  let rests = 0;
+  const restDays = new Set();
+  if (!days.length) return { streak, best, rests, restDays };
+  for (let day = days[0]; day <= today; day = addDays(day, 1)) {
+    if (done(day)) {
+      streak++;
+      best = Math.max(best, streak);
+      if (streak % REST_EVERY === 0) rests = Math.min(MAX_RESTS, rests + 1);
+    } else if (day === today) {
+      // today is still open: the streak runs through yesterday
+    } else if (streak > 0 && rests > 0) {
+      rests--;
+      restDays.add(day);
+    } else {
+      streak = 0;
+      rests = 0;
+    }
   }
-  return { streak, best: Math.max(best, streak) };
+  return { streak, best, rests, restDays };
+}
+
+// Which game a result key belongs to: daily `date|mode|game`, infinite `inf|mode|game|n`, classic `lvl|game|id`.
+export function gameOfKey(k) {
+  const p = k.split('|');
+  return p[0] === 'lvl' ? p[1] : p[2];
 }

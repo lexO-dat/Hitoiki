@@ -87,13 +87,39 @@ deshacer.
     que sobrevive a desinstalar la app;
   - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
 
+## Diseño
+
+Identidad propia inspirada en el papel y la tinta japoneses:
+
+- **Ensō (円相)**: el círculo de pincel muestra el progreso del día, un trazo por cada puzzle.
+- **Hanko (判子)**: un sello bermellón se estampa sobre cada puzzle resuelto, con el kanji del juego
+  (冠 Coronas, 道 Ruta, 橋 Puentes…). El día completo lleva el sello 済.
+- **Papel washi y tinta sumi**: fondos cálidos con textura de fibra, tinta casi negra y un único color
+  de acento para las recompensas; tema oscuro "de noche" con la misma paleta.
+- **Colores tradicionales** por juego: sakura, fuji, matcha, ai, yamabuki, kaki, seiji…
+- Tipografías incluidas en la app: Shippori Mincho para títulos y Zen Maru Gothic para el texto. Los
+  pocos kanji de la interfaz salen de un recorte de 6 KB de la fuente (`scripts/subset-kanji.py`).
+
+Experiencia de uso:
+
+- Un solo toque para jugar: el inicio muestra el siguiente puzzle (primero los que dejaste a medias).
+- Al resolver: sello animado, comparación con tu mejor tiempo (récords sólo sin pistas), el ensō del
+  día avanza y el botón principal lleva directo al siguiente puzzle del día. El resultado se puede
+  compartir como texto.
+- Hitos de racha (3, 7, 14, 30… días) con mensajes propios.
+- Animaciones cortas y suaves que respetan la opción del sistema "reducir movimiento".
+
 ## Modos
 
-- **Diario**: cuatro puzzles destacados cada día y el resto en "Otros puzzles", en dificultad Estándar,
+- **Diario**: cuatro puzzles destacados cada día y el resto en "Más puzzles", en dificultad Estándar,
   Difícil o Experto. Los puzzles de cada día sólo se pueden jugar ese mismo día: el calendario semanal
   muestra los días anteriores como historial (lo que resolviste y lo que quedó sin jugar), y a
   medianoche la app pasa sola al día nuevo. Resolver cuatro puzzles en su mismo día mantiene la
   racha; lo resuelto fuera de su día no cuenta.
+- **Descansos**: cada 7 días de racha ganas un día de descanso (máximo 2). Si un día no juegas, se
+  usa uno automáticamente y la racha sigue; se marca con una hoja en el calendario.
+- **Cuaderno**: racha, mejor racha, puzzles perfectos, un libro de sellos mensual con cada día
+  completado y los mejores tiempos por juego.
 - **Infinito**: niveles numerados sin fin para cada juego y dificultad; al resolver uno se pasa al siguiente.
 - **Niveles**: 44.834 niveles diseñados, organizados por juego, dificultad y colección, con progreso
   por nivel.

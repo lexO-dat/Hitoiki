@@ -7,7 +7,7 @@ export function useApplyTheme(mode) {
     const apply = () => {
       const dark = mode === 'dark' || (mode === 'system' && mq.matches);
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#151b22' : '#f6f2ef');
+      document.querySelector('meta[name=theme-color]')?.setAttribute('content', dark ? '#1b1916' : '#f3eee4');
     };
     apply();
     mq.addEventListener('change', apply);

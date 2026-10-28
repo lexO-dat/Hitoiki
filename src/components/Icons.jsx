@@ -69,3 +69,17 @@ export function Moon(props) {
     </svg>
   );
 }
+export const Leaf = icon(
+  <g {...S}>
+    <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" />
+    <path d="M5 19l8-8" />
+  </g>,
+);
+export const Share = icon(
+  <g {...S}>
+    <path d="M12 3v12M7 8l5-5 5 5" />
+    <path d="M5 13v6h14v-6" />
+  </g>,
+);
+export const Arrow = icon(<path {...S} d="M5 12h14M13 6l6 6-6 6" />);
+export const Loop = icon(<path {...S} d="M6.5 15.5a3.5 3.5 0 1 1 0-7c3 0 8 7 11 7a3.5 3.5 0 1 0 0-7c-3 0-8 7-11 7z" />);

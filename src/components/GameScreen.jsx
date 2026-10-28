@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { praise } from '../lib/daily.js';
 import { formatTime } from '../lib/dates.js';
-import { clearProgress, computeStreak, saveProgress, saveResult, store, useStore } from '../lib/storage.js';
+import { clearProgress, completedOn, computeStreak, saveProgress, saveResult, store, STREAK_REQUIRED, useStore } from '../lib/storage.js';
+import { todayKey } from '../lib/dates.js';
 import { vibrate } from '../lib/theme.js';
 import { sfx } from '../lib/sound.js';
 import Celebration from './Celebration.jsx';
 import { syncReminders } from '../lib/notify.js';
 import { Back, Bulb, Eraser, Flame, Help, Play, Undo } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
+
+// Rough "how much is on the board": counts filled leaves of any board state. Its change tells
+// placing (up) from erasing (down) for the sound, whatever the game.
+function amount(v) {
+  if (Array.isArray(v)) return v.reduce((n, x) => n + amount(x), 0);
+  if (v && typeof v === 'object') return Object.values(v).reduce((n, x) => n + amount(x), 0);
+  return v ? 1 : 0;
+}
 
 function Rules({ game, onClose }) {
   return (
@@ -98,6 +107,14 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
   const meta = useRef({ time: elapsed, hints, mistakes });
   meta.current = { time: elapsed, hints, mistakes };
 
+  // Instrument, key and ambient pad for this game while the board is being played.
+  const music = settings.sound && settings.music;
+  useEffect(() => {
+    if (done) return;
+    sfx.enterGame(game.id);
+    return () => sfx.leaveGame();
+  }, [game.id, done, music]);
+
   useEffect(() => {
     if (done || showRules || celebrating) return;
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
@@ -117,11 +134,16 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     saveProgress(storageKey, pending.current.data);
     pending.current = null;
   }, [storageKey]);
+  const lastAmount = useRef(null);
   const onChange = useCallback(
     (state) => {
       if (done) return;
-      // Ruta plays its own rising notes; every other board gets a soft pluck per change.
-      if (game.id !== 'zip') sfx.tap();
+      // Ruta plays its own notes following the path; every other board plays the move as music.
+      const n = amount(state);
+      // Pintura and Tuberías change cells in place (colors, rotations): every move moves forward.
+      const inPlace = game.id === 'kami' || game.id === 'pipes';
+      if (game.id !== 'zip') sfx.move(inPlace || lastAmount.current === null ? 1 : n - lastAmount.current);
+      lastAmount.current = n;
       if (pending.current) clearTimeout(pending.current.timer);
       pending.current = { data: { state, meta: meta.current }, timer: setTimeout(flush, 400) };
     },
@@ -144,14 +166,16 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     saveResult(storageKey, result);
     syncReminders().catch(() => {});
     vibrate(store.get().settings.haptics, [20, 40, 20]);
-    sfx.solve();
+    sfx.solve({ perfect: !result.hints && !result.mistakes });
+    // This solve completed today's puzzles for the streak: play the streak motif after the cadence.
+    if (showStreak && completedOn(store.get(), todayKey()) === STREAK_REQUIRED) setTimeout(() => sfx.streak(), 1500);
     setCelebrating(true);
     // Let the board celebrate before switching to the result screen.
     setTimeout(() => {
       setCelebrating(false);
       setDone(result);
     }, 1900);
-  }, [storageKey]);
+  }, [storageKey, showStreak]);
   const onMistake = useCallback(() => {
     setMistakes((m) => m + 1);
     sfx.error();

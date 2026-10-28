@@ -67,6 +67,11 @@ export default function Settings({ navigate }) {
         </div>
         {settings.sound && (
           <div className="row">
+            Música ambiente <Switch k="music" />
+          </div>
+        )}
+        {settings.sound && (
+          <div className="row">
             Volumen
             <input
               type="range"
@@ -75,7 +80,7 @@ export default function Settings({ navigate }) {
               step="0.05"
               value={settings.volume ?? 0.7}
               onChange={(e) => setSetting('volume', Number(e.target.value))}
-              onPointerUp={() => sfx.solve()}
+              onPointerUp={() => sfx.preview()}
               aria-label="Volumen"
               className="slider"
             />

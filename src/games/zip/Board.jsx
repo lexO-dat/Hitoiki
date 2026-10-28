@@ -46,7 +46,10 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
     const i = cur.findIndex((q) => same(q, p));
     if (i >= 0) {
       // Moving back over the line rewinds it to that cell.
-      if (i < cur.length - 1) b.replace(cur.slice(0, i + 1));
+      if (i < cur.length - 1) {
+        b.replace(cur.slice(0, i + 1));
+        sfx.rewind(i + 1, w * h);
+      }
       return true;
     }
     const last = cur[cur.length - 1];
@@ -57,7 +60,7 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
       return false;
     }
     b.replace([...cur, p]);
-    sfx.step(cur.length);
+    sfx.step(cur.length + 1, w * h);
     return true;
   };
 

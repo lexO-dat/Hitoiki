@@ -57,8 +57,21 @@ deshacer.
 
 ## Sonido y recordatorios
 
-- **Sonidos cozy**: sintetizados en el momento con Web Audio (notas suaves en escala pentatónica con
-  un poco de reverberación); sin archivos de audio. Se pueden apagar o ajustar el volumen en Ajustes.
+- **Sonido musical**: todo se sintetiza en el momento con Web Audio, sin archivos de audio. Cada jugada
+  es una nota de una progresión de acordes suave (I – vi – IV – V), así que una partida suena como una
+  melodía y no como el mismo clic repetido.
+  - **Racha de jugadas**: jugadas seguidas y rápidas suben nota a nota por el acorde; al llegar arriba
+    vuelve a empezar una octava más abajo con una campanita. Una pausa la calma, un error la corta y
+    borrar baja.
+  - **Progreso**: en Ruta el tono sube a medida que llenas el tablero, en pequeños arpegios, y la
+    progresión vuelve al acorde de inicio justo al terminar.
+  - **Variedad**: cada juego tiene su instrumento (marimba, kalimba, campanas, arpa, madera, gota),
+    cada día suena en otra tonalidad y cada nota lleva pequeñas variaciones de afinación, intensidad,
+    tiempo y posición estéreo.
+  - **Recompensas**: destellos ocasionales, varios cierres distintos al resolver, uno más largo si lo
+    resolviste sin pistas ni errores, y un motivo fijo cuando completas los puzzles del día para la racha.
+  - **Música ambiente** opcional: un colchón suave que sigue los acordes mientras juegas.
+  - En Ajustes se puede apagar el sonido o la música ambiente, y ajustar el volumen.
 - **Recordatorios**: un aviso diario a la hora que elijas, con mensajes que rotan, y un aviso de racha
   a las 21:30 si aún no completaste el día. En Android son notificaciones programadas que llegan con la
   app cerrada; en el navegador sólo funcionan con la página abierta.

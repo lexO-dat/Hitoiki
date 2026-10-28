@@ -119,6 +119,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.APP_VERSION }}
+          # Tag the commit that was built, not whatever main points to when the job ends.
+          target_commitish: ${{ github.sha }}
           name: Hitoiki ${{ env.APP_VERSION }}
           body_path: release-notes.md
           files: |

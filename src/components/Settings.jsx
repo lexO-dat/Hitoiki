@@ -3,6 +3,7 @@ import { Back } from './Icons.jsx';
 import { sfx } from '../lib/sound.js';
 import { useState } from 'react';
 import { ensurePermission, testNotification } from '../lib/notify.js';
+import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
 
 const setSetting = (k, v) => store.update((s) => ({ ...s, settings: { ...s.settings, [k]: v } }));
 
@@ -114,6 +115,7 @@ export default function Settings({ navigate }) {
         )}
       </div>
       {notice && <p className="footnote">{notice}</p>}
+      <Updates />
       <h3 className="section">Datos</h3>
       <div className="list">
         <div className="row">
@@ -123,7 +125,66 @@ export default function Settings({ navigate }) {
           </button>
         </div>
       </div>
-      <p className="footnote">Pausa · v1.0.0 · Todo se guarda en este dispositivo.</p>
+      <p className="footnote">Pausa · v{APP_VERSION} · Todo se guarda en este dispositivo.</p>
     </div>
+  );
+}
+
+function Updates() {
+  const [info, setInfo] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const check = async () => {
+    setBusy(true);
+    setInfo(await checkForUpdate());
+    setBusy(false);
+  };
+  const update = async () => {
+    setBusy(true);
+    setProgress(0);
+    try {
+      await applyUpdate(info, setProgress);
+    } catch (e) {
+      setInfo({ status: 'error', message: e.message || 'No se pudo descargar la actualización.' });
+    }
+    setBusy(false);
+    setProgress(null);
+  };
+  return (
+    <>
+      <h3 className="section">Actualizaciones</h3>
+      <div className="list">
+        <div className="row">
+          <span>
+            Versión instalada
+            <br />
+            <small className="muted">{APP_VERSION}</small>
+          </span>
+          <button className="btn" onClick={check} disabled={busy}>
+            {busy && progress === null ? 'Buscando…' : 'Buscar'}
+          </button>
+        </div>
+        {info && (
+          <div className="row update-row">
+            {info.status === 'latest' && <span>Tienes la última versión ✓</span>}
+            {info.status === 'error' && <span className="muted">No se pudo comprobar: {info.message}</span>}
+            {(info.status === 'web' || info.status === 'native') && (
+              <div className="update">
+                <b>Versión {info.version} disponible</b>
+                {info.status === 'native' && <small className="muted">Esta versión necesita instalar el APK nuevo.</small>}
+                {progress !== null && (
+                  <div className="bar">
+                    <i style={{ width: `${progress}%` }} />
+                  </div>
+                )}
+                <button className="btn primary" onClick={update} disabled={busy}>
+                  {progress !== null ? `Descargando… ${progress}%` : info.status === 'native' ? 'Descargar APK' : 'Actualizar ahora'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
   );
 }

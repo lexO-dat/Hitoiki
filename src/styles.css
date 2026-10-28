@@ -240,3 +240,6 @@ table.games th { font-family: var(--serif); font-weight: 600; font-size: 14px; }
 .logo-word { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 28px; letter-spacing: -0.3px; }
 .select { font: inherit; border: 1.5px solid var(--stroke); border-radius: 9px; background: var(--surface); color: var(--text); padding: 5px 8px; }
 .muted { color: var(--text-2); font-size: 11px; }
+.update-row { display: block; }
+.update { display: flex; flex-direction: column; gap: 8px; }
+.update .bar { max-width: none; }

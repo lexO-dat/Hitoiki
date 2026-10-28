@@ -7,8 +7,9 @@ android {
         applicationId "cl.pausa.puzzles"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        // CI passes the build number so every APK can be installed over the previous one.
+        versionCode (System.getenv("APP_BUILD") ?: "1").toInteger()
+        versionName System.getenv("APP_VERSION") ?: "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +17,27 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Every APK must be signed with the same key so Android installs updates over the previous one.
+    // The key is NOT in the repo: CI restores it from the PAUSA_KEYSTORE_BASE64 secret and passes the
+    // path and password as environment variables. Without them, the default debug key is used.
+    def keystorePath = System.getenv("PAUSA_KEYSTORE")
+    def hasPausaKey = keystorePath != null && file(keystorePath).exists()
+    signingConfigs {
+        if (hasPausaKey) {
+            pausa {
+                storeFile file(keystorePath)
+                storePassword System.getenv("PAUSA_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("PAUSA_KEY_ALIAS") ?: "pausa"
+                keyPassword System.getenv("PAUSA_KEYSTORE_PASSWORD")
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (hasPausaKey) signingConfig signingConfigs.pausa
+        }
         release {
+            if (hasPausaKey) signingConfig signingConfigs.pausa
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

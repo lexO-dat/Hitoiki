@@ -10,6 +10,9 @@ permissions:
 
 jobs:
   apk:
+    env:
+      APP_VERSION: 1.0.${{ github.run_number }}
+      APP_BUILD: ${{ github.run_number }}
     # ubuntu-24.04 images ship with the Android SDK preinstalled ($ANDROID_HOME).
     runs-on: ubuntu-24.04
     steps:
@@ -39,22 +42,44 @@ jobs:
       - name: Build web app and sync Android project
         run: npm run android:sync
 
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.PAUSA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/pausa.keystore"
+            echo "PAUSA_KEYSTORE=$RUNNER_TEMP/pausa.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::PAUSA_KEYSTORE_BASE64 secret not set: APK signed with a throwaway debug key"
+          fi
+
       - name: Build debug APK
         working-directory: android
+        env:
+          PAUSA_KEYSTORE_PASSWORD: ${{ secrets.PAUSA_KEYSTORE_PASSWORD }}
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk "Pausa-1.0.${{ github.run_number }}.apk"
+      - name: Package APK and web bundle
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk "Pausa-$APP_VERSION.apk"
+          (cd dist && zip -qr "../web-$APP_VERSION.zip" .)
+          NATIVE=$(grep -oP 'NATIVE_VERSION = \K[0-9]+' src/lib/updates.js)
+          printf 'APK de Android: descarga el archivo .apk y ábrelo en el teléfono.\nSi ya tienes Pausa instalada, actualiza desde Ajustes → Actualizaciones.\n\n<!-- pausa-native: %s -->\n' "$NATIVE" > release-notes.md
+          cat release-notes.md
 
       - uses: actions/upload-artifact@v4
         with:
           name: Pausa-apk
-          path: Pausa-*.apk
+          path: |
+            Pausa-*.apk
+            web-*.zip
 
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: Pausa 1.0.${{ github.run_number }}
-          body: APK de Android (debug, instalable directamente). Descarga el archivo .apk y ábrelo en el teléfono.
-          files: Pausa-*.apk
+          body_path: release-notes.md
+          files: |
+            Pausa-*.apk
+            web-*.zip

@@ -2,8 +2,20 @@
   "appId": "cl.pausa.puzzles",
   "appName": "Pausa",
   "webDir": "dist",
-  "android": { "backgroundColor": "#f6f2ef" },
+  "android": {
+    "backgroundColor": "#f6f2ef"
+  },
   "plugins": {
-    "LocalNotifications": { "smallIcon": "ic_stat_pausa", "iconColor": "#303030" }
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_pausa",
+      "iconColor": "#303030"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "resetWhenUpdate": true,
+      "appReadyTimeout": 15000,
+      "statsUrl": "",
+      "responseTimeout": 60
+    }
   }
 }

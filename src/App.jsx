@@ -13,6 +13,7 @@ import { resultKey, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
 import { syncReminders } from './lib/notify.js';
+import { markAppReady } from './lib/updates.js';
 import { Capacitor } from '@capacitor/core';
 
 const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean);
@@ -61,6 +62,11 @@ export default function App() {
     document.addEventListener('visibilitychange', on);
     return () => document.removeEventListener('visibilitychange', on);
   }, [reminders]);
+
+  // Tell the live-update plugin this bundle started fine (otherwise it rolls back to the previous one).
+  useEffect(() => {
+    markAppReady().catch(() => {});
+  }, []);
 
   // Android back button: go back inside the app, close it from the home screen.
   useEffect(() => {

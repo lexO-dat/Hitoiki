@@ -1,3 +1,7 @@
 node_modules
 dist
 __pycache__
+
+# Signing keys never go in the repo (CI restores it from a secret).
+*.keystore
+*.jks

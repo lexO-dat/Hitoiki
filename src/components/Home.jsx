@@ -1,15 +1,16 @@
 import { GAME_BY_ID, MODES } from '../data/games.js';
 import { dailySelection, SELECTION_SIZE } from '../lib/daily.js';
-import { addDays, dayNum, diffDays, formatTime, longDate, todayKey, weekDays, weekdayLong, weekdayShort } from '../lib/dates.js';
+import { addDays, dayNum, diffDays, formatTime, longDate, weekDays, weekdayLong, weekdayShort } from '../lib/dates.js';
 import { completedOn, computeStreak, resultKey, STREAK_REQUIRED, useStore } from '../lib/storage.js';
 import { Back, Chart, Flame, Gear } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 import Nav from './Nav.jsx';
 import Logo from './Logo.jsx';
 
-export default function Home({ date, mode, setDate, setMode, navigate }) {
+export default function Home({ date, today, mode, setDate, setMode, navigate }) {
   const s = useStore();
-  const today = todayKey();
+  // Daily puzzles can only be played on their own day; earlier days only show what was solved.
+  const past = date !== today;
   const { streak } = computeStreak(s, today);
   const { featured, others } = dailySelection(date);
   const otherIds = date === today ? [...others, 'sudoku'] : others;
@@ -21,11 +22,12 @@ export default function Home({ date, mode, setDate, setMode, navigate }) {
   const status = (id) => {
     const r = result(id);
     if (r) return `✓ ${formatTime(r.time)}`;
+    if (past) return 'No jugado';
     if (started(id)) return 'En curso';
     return 'Jugar';
   };
 
-  const open = (id) => navigate(`/play/${date}/${mode}/${id}`);
+  const open = (id) => !past && navigate(`/play/${date}/${mode}/${id}`);
 
   return (
     <div className="screen with-nav">
@@ -82,6 +84,14 @@ export default function Home({ date, mode, setDate, setMode, navigate }) {
           {Math.min(done, STREAK_REQUIRED)} de {STREAK_REQUIRED} puzzles para la racha
         </div>
       </div>
+      {past && (
+        <p className="closed-note">
+          Este día ya cerró: sus puzzles solo se podían jugar ese día.{' '}
+          <button className="linklike" onClick={() => setDate(today)}>
+            Ir a hoy
+          </button>
+        </p>
+      )}
 
       <div className="tabs" role="group" aria-label="Dificultad">
         {MODES.map((m) => (
@@ -95,7 +105,7 @@ export default function Home({ date, mode, setDate, setMode, navigate }) {
         {featured.slice(0, SELECTION_SIZE).map((id) => {
           const g = GAME_BY_ID[id];
           return (
-            <button key={id} className={`card${result(id) ? ' solved' : ''}`} style={{ '--c': g.main, '--cbg': g.bg }} onClick={() => open(id)}>
+            <button key={id} className={`card${result(id) ? ' solved' : ''}${past ? ' locked' : ''}`} style={{ '--c': g.main, '--cbg': g.bg }} disabled={past} onClick={() => open(id)}>
               <div>
                 <h4>{g.name}</h4>
                 <p>{g.tagline}</p>
@@ -112,7 +122,7 @@ export default function Home({ date, mode, setDate, setMode, navigate }) {
         {otherIds.map((id) => {
           const g = GAME_BY_ID[id];
           return (
-            <button key={id} className="mini" style={{ '--c': g.main, '--cbg': g.bg }} onClick={() => open(id)}>
+            <button key={id} className={`mini${past ? ' locked' : ''}`} style={{ '--c': g.main, '--cbg': g.bg }} disabled={past} onClick={() => open(id)}>
               {g.todayOnly && <span className="tag">sólo hoy</span>}
               <Thumb game={g} />
               <h4>{g.name}</h4>

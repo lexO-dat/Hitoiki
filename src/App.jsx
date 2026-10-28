@@ -7,9 +7,10 @@ import InfiniteHome from './components/InfiniteHome.jsx';
 import { ClassicHome, ClassicList } from './components/Classic.jsx';
 import { GAME_BY_ID, MODES } from './data/games.js';
 import { getPuzzle } from './lib/daily.js';
-import { longDate, todayKey } from './lib/dates.js';
+import { formatTime, longDate } from './lib/dates.js';
+import { useToday } from './lib/useToday.js';
 import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/levels.js';
-import { resultKey, useStore } from './lib/storage.js';
+import { resultKey, store, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
 import { syncReminders } from './lib/notify.js';
@@ -20,6 +21,28 @@ const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').f
 const modeLabel = (m) => MODES.find((x) => x.id === m)?.label ?? m;
 // Classic difficulties map onto the visual mode badges.
 const CLASSIC_MODE = { easy: 'standard', medium: 'standard', hard: 'hard', expert: 'expert' };
+
+// A daily puzzle opened after its day (old link, or the app left open past midnight).
+function DailyClosed({ date, mode, game, onToday, navigate }) {
+  const result = store.get().results[resultKey(date, mode, game.id)];
+  return (
+    <div className="screen closed" style={{ '--c': game.main, '--cbg': game.bg }}>
+      <h1>Este puzzle ya cerró</h1>
+      <p className="lead">
+        Los puzzles diarios solo se pueden jugar el mismo día. {game.name} del {longDate(date)}{' '}
+        {result ? `lo resolviste en ${formatTime(result.time)}.` : 'quedó sin jugar.'}
+      </p>
+      <div className="closed-actions">
+        <button className="btn primary" onClick={onToday}>
+          Puzzles de hoy
+        </button>
+        <button className="btn" onClick={() => navigate('/inf')}>
+          Modo infinito
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function ClassicPlay({ gameId, index, navigate }) {
   // Keep the game id with its data so a route change never renders one game's levels on another board.
@@ -80,8 +103,15 @@ export default function App() {
     });
     return () => handle?.then?.((h) => h.remove());
   }, []);
-  const [date, setDate] = useState(todayKey);
+  const today = useToday();
+  const [date, setDate] = useState(today);
   const [mode, setMode] = useState('standard');
+  // At midnight the home screen moves on to the new day's puzzles.
+  const [shownToday, setShownToday] = useState(today);
+  if (shownToday !== today) {
+    setShownToday(today);
+    if (date === shownToday) setDate(today);
+  }
 
   // Audio can only start after a user gesture; menu buttons get a tiny soft click.
   useEffect(() => {
@@ -114,19 +144,26 @@ export default function App() {
   let content;
   if (page === 'play' && args.length === 3 && GAME_BY_ID[args[2]]) {
     const [d, m, g] = args;
-    content = (
-      <GameScreen
-        key={args.join('|')}
-        game={GAME_BY_ID[g]}
-        puzzle={getPuzzle(d, m, g)}
-        storageKey={resultKey(d, m, g)}
-        mode={m}
-        modeLabel={modeLabel(m)}
-        subtitle={longDate(d)}
-        onBack={() => navigate('/')}
-        showStreak
-      />
-    );
+    const toToday = () => {
+      setDate(today);
+      navigate('/');
+    };
+    content =
+      d !== today ? (
+        <DailyClosed date={d} mode={m} game={GAME_BY_ID[g]} onToday={toToday} navigate={navigate} />
+      ) : (
+        <GameScreen
+          key={args.join('|')}
+          game={GAME_BY_ID[g]}
+          puzzle={getPuzzle(d, m, g)}
+          storageKey={resultKey(d, m, g)}
+          mode={m}
+          modeLabel={modeLabel(m)}
+          subtitle={longDate(d)}
+          onBack={() => navigate('/')}
+          showStreak
+        />
+      );
   } else if (page === 'inf' && args.length === 3 && GAME_BY_ID[args[1]]) {
     const [m, g, nStr] = args;
     const n = Math.max(1, Number(nStr) || 1);
@@ -149,7 +186,7 @@ export default function App() {
   else if (page === 'lvl') content = <ClassicHome navigate={navigate} />;
   else if (page === 'settings') content = <Settings navigate={navigate} />;
   else if (page === 'stats') content = <Stats navigate={navigate} />;
-  else content = <Home date={date} mode={mode} setDate={setDate} setMode={setMode} navigate={navigate} />;
+  else content = <Home date={date} today={today} mode={mode} setDate={setDate} setMode={setMode} navigate={navigate} />;
 
   return <div className="app">{content}</div>;
 }

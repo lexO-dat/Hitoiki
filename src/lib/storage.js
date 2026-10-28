@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { addDays, todayKey } from './dates.js';
+import { addDays, todayKey, toKey } from './dates.js';
 
 // Storage key and schema. NEVER rename the key: updates must always find previous data.
 // Format changes go through SCHEMA + migrate(), so old saves are upgraded instead of discarded.
@@ -110,8 +110,15 @@ export function clearProgress(k) {
   });
 }
 
+// A daily puzzle only counts for its day when it was solved on that same day: daily puzzles cannot be
+// played afterwards, and anything solved late (before that rule existed) never adds to the streak.
+export function countsForDay(key, result) {
+  const date = key.split('|')[0];
+  return Boolean(result?.solvedAt) && toKey(new Date(result.solvedAt)) === date;
+}
+
 export function completedOn(s, date) {
-  return Object.keys(s.results).filter((k) => k.startsWith(date + '|')).length;
+  return Object.entries(s.results).filter(([k, r]) => k.startsWith(date + '|') && countsForDay(k, r)).length;
 }
 
 export function computeStreak(s, today = todayKey()) {

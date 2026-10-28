@@ -79,8 +79,10 @@ deshacer.
 ## Modos
 
 - **Diario**: cuatro puzzles destacados cada día y el resto en "Otros puzzles", en dificultad Estándar,
-  Difícil o Experto. El calendario semanal permite jugar días anteriores. Resolver cuatro puzzles en
-  un día mantiene la racha. El Sudoku sólo está disponible el día actual.
+  Difícil o Experto. Los puzzles de cada día sólo se pueden jugar ese mismo día: el calendario semanal
+  muestra los días anteriores como historial (lo que resolviste y lo que quedó sin jugar), y a
+  medianoche la app pasa sola al día nuevo. Resolver cuatro puzzles en su mismo día mantiene la
+  racha; lo resuelto fuera de su día no cuenta.
 - **Infinito**: niveles numerados sin fin para cada juego y dificultad; al resolver uno se pasa al siguiente.
 - **Niveles**: 44.834 niveles diseñados, organizados por juego, dificultad y colección, con progreso
   por nivel.

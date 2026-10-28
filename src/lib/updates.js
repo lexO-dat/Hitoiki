@@ -46,9 +46,12 @@ export async function checkForUpdate() {
     const asset = (re) => rel.assets.find((a) => re.test(a.name))?.browser_download_url;
     const notes = (rel.body ?? '').replace(/<!--[\s\S]*?-->/g, '').trim();
     if (native > NATIVE_VERSION) return { status: 'native', version, notes, apkUrl: asset(/\.apk$/) };
-    const bundleUrl = asset(/^web-.*\.zip$/);
-    if (!bundleUrl) return { status: 'native', version, notes, apkUrl: asset(/\.apk$/) };
-    return { status: 'web', version, notes, bundleUrl };
+    const zip = rel.assets.find((a) => /^web-.*\.zip$/.test(a.name));
+    // The updater refuses bundles without their SHA-256: GitHub reports it as the asset digest,
+    // and the release notes carry it too as a fallback.
+    const checksum = /^sha256:([0-9a-f]{64})$/.exec(zip?.digest ?? '')?.[1] ?? /web-sha256:\s*([0-9a-f]{64})/.exec(rel.body ?? '')?.[1];
+    if (!zip || !checksum) return { status: 'native', version, notes, apkUrl: asset(/\.apk$/) };
+    return { status: 'web', version, notes, bundleUrl: zip.browser_download_url, checksum, apkUrl: asset(/\.apk$/) };
   } catch (e) {
     return { status: 'error', message: e.message || 'Sin conexión' };
   }
@@ -68,7 +71,7 @@ export async function applyUpdate(info, onProgress) {
   const up = (await updaterModule()).CapacitorUpdater;
   const sub = await up.addListener('download', (e) => onProgress?.(e.percent));
   try {
-    const bundle = await up.download({ url: info.bundleUrl, version: info.version });
+    const bundle = await up.download({ url: info.bundleUrl, version: info.version, checksum: info.checksum });
     await up.set({ id: bundle.id });
   } finally {
     sub.remove();

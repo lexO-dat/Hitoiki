@@ -182,7 +182,9 @@ function Updates() {
     try {
       await applyUpdate(info, setProgress);
     } catch (e) {
-      setInfo({ status: 'error', message: e.message || 'No se pudo descargar la actualización.' });
+      const message = e.message || 'No se pudo descargar la actualización.';
+      // If the in-app update fails, the full APK still installs over the app without losing data.
+      setInfo(info.apkUrl ? { ...info, status: 'native', failed: message } : { status: 'error', message });
     }
     setBusy(false);
     setProgress(null);
@@ -208,7 +210,11 @@ function Updates() {
             {(info.status === 'web' || info.status === 'native') && (
               <div className="update">
                 <b>Versión {info.version} disponible</b>
-                {info.status === 'native' && <small className="muted">Esta versión necesita instalar el APK nuevo.</small>}
+                {info.status === 'native' && (
+                  <small className="muted">
+                    {info.failed ? `No se pudo instalar dentro de la app (${info.failed}). Descarga el APK: se instala encima y conserva tu progreso.` : 'Esta versión necesita instalar el APK nuevo.'}
+                  </small>
+                )}
                 {progress !== null && (
                   <div className="bar">
                     <i style={{ width: `${progress}%` }} />

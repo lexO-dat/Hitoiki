@@ -71,7 +71,8 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk "Hitoiki-$APP_VERSION.apk"
           (cd dist && zip -qr "../web-$APP_VERSION.zip" .)
           NATIVE=$(grep -oP 'NATIVE_VERSION = \K[0-9]+' src/lib/updates.js)
-          printf 'APK de Android: descarga el archivo .apk y ábrelo en el teléfono.\nSi ya tienes Hitoiki instalada, actualiza desde Ajustes → Actualizaciones.\n\n<!-- pausa-native: %s -->\n' "$NATIVE" > release-notes.md
+          SHA=$(sha256sum "web-$APP_VERSION.zip" | cut -d' ' -f1)
+          printf 'APK de Android: descarga el archivo .apk y ábrelo en el teléfono.\nSi ya tienes Hitoiki instalada, actualiza desde Ajustes → Actualizaciones.\n\n<!-- pausa-native: %s -->\n<!-- web-sha256: %s -->\n' "$NATIVE" "$SHA" > release-notes.md
           cat release-notes.md
 
       - uses: actions/upload-artifact@v4

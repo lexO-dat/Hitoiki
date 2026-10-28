@@ -104,3 +104,23 @@ test('generators are deterministic per seed', () => {
   const b = queens.generate(createRng('x'), 'hard');
   assert.deepEqual(a, b);
 });
+
+test('Sol y Luna: three in a row and too many in a line are reported with their cells', async () => {
+  const { problems, describe } = await import('../src/games/tango/logic.js');
+  const puzzle = { n: 6, cons: [] };
+  const empty = () => Array.from({ length: 6 }, () => Array(6).fill(0));
+  const three = empty();
+  three[0][0] = three[0][1] = three[0][2] = 1;
+  const p1 = problems(puzzle, three);
+  assert.equal(p1.length, 1);
+  assert.equal(p1[0].kind, 'three');
+  assert.deepEqual(p1[0].cells, [[0, 0], [0, 1], [0, 2]]);
+  assert.equal(describe(p1[0], 6), 'No puede haber tres soles seguidos.');
+  const four = empty();
+  [0, 2, 3, 5].forEach((c) => (four[1][c] = 2)); // 4 moons, never 3 in a row
+  const p2 = problems(puzzle, four);
+  assert.equal(p2.length, 1);
+  assert.equal(p2[0].kind, 'count');
+  assert.equal(p2[0].cells.length, 4);
+  assert.equal(describe(p2[0], 6), 'Una fila no puede tener más de 3 lunas.');
+});

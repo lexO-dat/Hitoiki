@@ -1,12 +1,13 @@
 import { forwardRef, useImperativeHandle, useMemo } from 'react';
 import { useBoardState, useBoardSize, clone2 } from '../common.js';
-import { errors, isSolved } from './logic.js';
+import { describe, errors, isSolved, problems } from './logic.js';
 import { Sun, Moon } from '../../components/Icons.jsx';
 
 export default forwardRef(function TangoBoard({ puzzle, saved, onChange, onSolved, onMistake }, ref) {
   const { n, givens, cons, solution } = puzzle;
   const b = useBoardState({ initial: clone2(givens), saved, onChange, isSolved: (s) => isSolved(puzzle, s), onSolved });
-  const bad = useMemo(() => errors(puzzle, b.state), [puzzle, b.state]);
+  const issues = useMemo(() => problems(puzzle, b.state), [puzzle, b.state]);
+  const bad = useMemo(() => new Set(issues.flatMap((p) => p.cells.map(([r, c]) => `${r},${c}`))), [issues]);
   const { cell, width } = useBoardSize(n, n, 420);
 
   useImperativeHandle(ref, () => ({
@@ -33,33 +34,38 @@ export default forwardRef(function TangoBoard({ puzzle, saved, onChange, onSolve
   };
 
   return (
-    <div className="tgrid" style={{ width, gridTemplateColumns: `repeat(${n}, ${cell}px)` }} role="grid" aria-label="Tablero sol y luna">
-      {b.state.map((row, r) =>
-        row.map((v, c) => (
-          <button
-            key={`${r}-${c}`}
-            className={`tcell${givens[r][c] ? ' given' : ''}${bad.has(`${r},${c}`) ? ' bad' : ''}`}
-            style={{ height: cell }}
-            onClick={() => tap(r, c)}
-            aria-label={v === 1 ? 'sol' : v === 2 ? 'luna' : 'vacía'}
+    <>
+      <div className="tgrid" style={{ width, gridTemplateColumns: `repeat(${n}, ${cell}px)` }} role="grid" aria-label="Tablero sol y luna">
+        {b.state.map((row, r) =>
+          row.map((v, c) => (
+            <button
+              key={`${r}-${c}`}
+              className={`tcell${givens[r][c] ? ' given' : ''}${bad.has(`${r},${c}`) ? ' bad' : ''}`}
+              style={{ height: cell }}
+              onClick={() => tap(r, c)}
+              aria-label={v === 1 ? 'sol' : v === 2 ? 'luna' : 'vacía'}
+            >
+              {v === 1 && <Sun />}
+              {v === 2 && <Moon />}
+            </button>
+          )),
+        )}
+        {cons.map(({ r, c, dir, type }) => (
+          <span
+            key={`${r}-${c}-${dir}`}
+            className="tsign"
+            style={{
+              left: dir === 'h' ? (c + 1) * cell : c * cell + cell / 2,
+              top: dir === 'v' ? (r + 1) * cell : r * cell + cell / 2,
+            }}
           >
-            {v === 1 && <Sun />}
-            {v === 2 && <Moon />}
-          </button>
-        )),
-      )}
-      {cons.map(({ r, c, dir, type }) => (
-        <span
-          key={`${r}-${c}-${dir}`}
-          className="tsign"
-          style={{
-            left: dir === 'h' ? (c + 1) * cell : c * cell + cell / 2,
-            top: dir === 'v' ? (r + 1) * cell : r * cell + cell / 2,
-          }}
-        >
-          {type === '=' ? '=' : '×'}
-        </span>
-      ))}
-    </div>
+            {type === '=' ? '=' : '×'}
+          </span>
+        ))}
+      </div>
+      <p className="board-msg" role="status" aria-live="polite">
+        {issues.length ? [...new Set(issues.map((p) => describe(p, n)))].slice(0, 2).join(' ') : ' '}
+      </p>
+    </>
   );
 });

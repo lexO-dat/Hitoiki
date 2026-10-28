@@ -106,35 +106,44 @@ export function generate(rng, mode = 'standard') {
   return { n: N, givens, cons, solution };
 }
 
-export function errors(puzzle, board) {
-  const bad = new Set();
+// Broken rules, each with the cells involved, for highlighting them and explaining what's wrong.
+// kinds: 'three' (three equal in a row), 'count' (more than half of one symbol in a line), 'sign'.
+export function problems(puzzle, board) {
+  const out = [];
   const { n, cons } = puzzle;
   const lines = [];
   for (let i = 0; i < n; i++) {
-    lines.push([...Array(n).keys()].map((c) => [i, c]));
-    lines.push([...Array(n).keys()].map((r) => [r, i]));
+    lines.push({ dir: 'fila', cells: [...Array(n).keys()].map((c) => [i, c]) });
+    lines.push({ dir: 'columna', cells: [...Array(n).keys()].map((r) => [r, i]) });
   }
-  for (const cells of lines) {
+  for (const { dir, cells } of lines) {
     const vals = cells.map(([r, c]) => board[r][c]);
     for (let i = 2; i < n; i++) {
-      if (vals[i] && vals[i] === vals[i - 1] && vals[i] === vals[i - 2]) {
-        [i - 2, i - 1, i].forEach((k) => bad.add(cells[k].join(',')));
-      }
+      if (vals[i] && vals[i] === vals[i - 1] && vals[i] === vals[i - 2]) out.push({ kind: 'three', value: vals[i], cells: [i - 2, i - 1, i].map((k) => cells[k]) });
     }
     for (const v of [1, 2]) {
-      if (vals.filter((x) => x === v).length > n / 2) cells.forEach(([r, c]) => board[r][c] === v && bad.add(`${r},${c}`));
+      if (vals.filter((x) => x === v).length > n / 2) out.push({ kind: 'count', value: v, dir, cells: cells.filter(([r, c]) => board[r][c] === v) });
     }
   }
   for (const { r, c, dir, type } of cons) {
     const [r2, c2] = dir === 'h' ? [r, c + 1] : [r + 1, c];
     const a = board[r][c];
     const b = board[r2][c2];
-    if (a && b && (type === '=' ? a !== b : a === b)) {
-      bad.add(`${r},${c}`);
-      bad.add(`${r2},${c2}`);
-    }
+    if (a && b && (type === '=' ? a !== b : a === b)) out.push({ kind: 'sign', type, cells: [[r, c], [r2, c2]] });
   }
-  return bad;
+  return out;
 }
+
+const NAME = { 1: ['sol', 'soles'], 2: ['luna', 'lunas'] };
+export function describe(p, n) {
+  if (p.kind === 'three') return `No puede haber tres ${NAME[p.value][1]} seguidos.`;
+  if (p.kind === 'count') return `Una ${p.dir} no puede tener más de ${n / 2} ${NAME[p.value][1]}.`;
+  return p.type === '=' ? 'El signo = une casillas iguales.' : 'El signo × une un sol con una luna.';
+}
+
+export function errors(puzzle, board) {
+  return new Set(problems(puzzle, board).flatMap((p) => p.cells.map(([r, c]) => `${r},${c}`)));
+}
+
 
 export const isSolved = (puzzle, board) => board.every((row) => row.every(Boolean)) && errors(puzzle, board).size === 0;

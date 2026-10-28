@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { readFileSync } from 'node:fs';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
-// CI sets APP_VERSION (1.0.<build>); local builds are marked as dev.
+// CI sets APP_VERSION (scripts/next-version.sh); local builds are marked as dev.
 const version = process.env.APP_VERSION ?? `${pkg.version}-dev`;
 
 export default defineConfig({

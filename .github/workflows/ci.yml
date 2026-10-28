@@ -1,0 +1,30 @@
+name: Tests
+
+# Changes to tests or tooling only: run the test suites without publishing a release.
+# (App changes run the same tests inside release.yml before building.)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Unit tests
+        run: npm test
+      - name: End-to-end tests
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e

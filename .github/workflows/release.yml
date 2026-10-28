@@ -1,22 +1,41 @@
-name: Android APK
+name: Release
 
+# A new version (APK + web update) is published only when something that ships inside the app
+# changes. Docs-only or test-only pushes don't release (tests run in ci.yml).
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'android/**'
+      - 'assets/**'
+      - 'index.html'
+      - 'vite.config.js'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
   apk:
-    env:
-      APP_VERSION: 1.0.${{ github.run_number }}
-      APP_BUILD: ${{ github.run_number }}
     # ubuntu-24.04 images ship with the Android SDK preinstalled ($ANDROID_HOME).
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # tags and history: version number and release notes
+
+      - name: Version
+        run: |
+          scripts/next-version.sh | tee -a "$GITHUB_ENV"
 
       - uses: actions/setup-node@v5
         with:
@@ -38,6 +57,11 @@ jobs:
 
       - name: Test
         run: npm test
+
+      - name: End-to-end tests (all games, daily loop, Android bridge, layout)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
 
       - name: Build web app and sync Android project
         run: npm run android:sync
@@ -72,7 +96,16 @@ jobs:
           (cd dist && zip -qr "../web-$APP_VERSION.zip" .)
           NATIVE=$(grep -oP 'NATIVE_VERSION = \K[0-9]+' src/lib/updates.js)
           SHA=$(sha256sum "web-$APP_VERSION.zip" | cut -d' ' -f1)
-          printf 'APK de Android: descarga el archivo .apk y ábrelo en el teléfono.\nSi ya tienes Hitoiki instalada, actualiza desde Ajustes → Actualizaciones.\n\n<!-- pausa-native: %s -->\n<!-- web-sha256: %s -->\n' "$NATIVE" "$SHA" > release-notes.md
+          {
+            echo '## Cambios'
+            git log --no-merges --pretty='- %s' ${PREV_TAG:+$PREV_TAG..}HEAD | head -n 40
+            echo
+            echo 'APK de Android: descarga el archivo .apk y ábrelo en el teléfono.'
+            echo 'Si ya tienes Hitoiki instalada, actualiza desde Ajustes → Actualizaciones.'
+            echo
+            echo "<!-- pausa-native: $NATIVE -->"
+            echo "<!-- web-sha256: $SHA -->"
+          } > release-notes.md
           cat release-notes.md
 
       - uses: actions/upload-artifact@v4
@@ -85,8 +118,8 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Hitoiki 1.0.${{ github.run_number }}
+          tag_name: v${{ env.APP_VERSION }}
+          name: Hitoiki ${{ env.APP_VERSION }}
           body_path: release-notes.md
           files: |
             Hitoiki-*.apk

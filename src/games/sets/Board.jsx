@@ -49,6 +49,13 @@ export default forwardRef(function SetsBoard({ puzzle, saved, onChange, onSolved
     hint() {
       const missing = sets.find((s) => !found.includes(setKey(s)));
       if (!missing) return false;
+      // First hint shows two cards of a trio; asking again for the same one completes it.
+      if (hinted.length && hinted.every((k, j) => k === missing[j])) {
+        setHinted([]);
+        setSel([]);
+        b.set({ found: [...found, setKey(missing)] });
+        return { cells: [] };
+      }
       setHinted(missing.slice(0, 2));
       setSel([]);
       return { cells: [] };

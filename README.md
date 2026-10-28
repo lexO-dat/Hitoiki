@@ -19,8 +19,8 @@ npm run build            # build estático en dist/
 
 ## App Android
 
-Cada push a `main` compila un APK en GitHub Actions y lo publica en **Releases** del repositorio
-(archivo `Hitoiki-1.0.N.apk`). Para instalarlo, ábrelo en el teléfono y permite "instalar apps de
+Cada cambio en el código de la app que llega a `main` compila un APK en GitHub Actions y lo publica
+en **Releases** del repositorio (archivo `Hitoiki-X.Y.Z.apk`, ver [Versiones](#versiones)). Para instalarlo, ábrelo en el teléfono y permite "instalar apps de
 fuentes desconocidas". Si ya la tienes instalada, actualiza desde **Ajustes → Actualizaciones**.
 
 Para compilarlo en tu equipo necesitas Android Studio (o el Android SDK) y Java 21:
@@ -82,6 +82,9 @@ deshacer.
 
 ## Actualizaciones y datos
 
+- **Pruebas**: `npm test` (unitarias) y `npm run test:e2e` (Playwright: los 11 juegos se resuelven,
+  ciclo diario completo, cierre a medianoche, puente nativo de Android con recordatorios y que todo
+  quepa en pantallas pequeñas).
 - **Actualizar desde la app**: Ajustes → Actualizaciones → Buscar. En Android descarga el paquete
   web nuevo desde GitHub Releases y lo aplica sin reinstalar; si la versión trae cambios nativos,
   ofrece descargar el APK. En la web detecta un despliegue nuevo y recarga.
@@ -90,6 +93,35 @@ deshacer.
   - en Android se guarda además una copia nativa y un respaldo automático en `Documentos/Hitoiki/`
     que sobrevive a desinstalar la app;
   - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
+
+## Versiones
+
+Formato `MAJOR.MINOR.PATCH` (versionado semántico adaptado a una app):
+
+| Sube | Cuándo | Ejemplos |
+| --- | --- | --- |
+| **PATCH** `1.0.x` | Lo normal. Arreglos y ajustes que no cambian cómo se usa la app. | Corregir un error, ajustar estilos, textos, sonidos, rendimiento, niveles. |
+| **MINOR** `1.x.0` | Algo nuevo que el jugador nota, o un cambio nativo que obliga a instalar un APK nuevo. | Un juego o modo nuevo, una pantalla nueva, widget, logros, nuevas notificaciones, permisos o plugins de Android. |
+| **MAJOR** `x.0.0` | Cambios grandes de concepto o que rompen la compatibilidad. | Rediseño completo, cambio de cómo funcionan las rachas o el modo diario, datos guardados que necesitan una migración sin vuelta atrás, cuentas o sincronización en la nube. |
+
+Cómo se aplica:
+
+- `package.json` guarda `MAJOR.MINOR`; el **PATCH lo pone el CI** (el siguiente número libre entre
+  las etiquetas `vMAJOR.MINOR.*`). Para subir MINOR o MAJOR se cambia la versión en `package.json`
+  (por ejemplo a `1.1.0` o `2.0.0`) en el mismo commit del cambio, y el PATCH vuelve a 0.
+- Al subir MAJOR, MINOR vuelve a 0.
+- El `versionCode` de Android se calcula como `MAJOR·1 000 000 + MINOR·1 000 + PATCH`, así siempre crece.
+- Un cambio nativo (permisos, plugins) además sube `NATIVE_VERSION` en `src/lib/updates.js`, para
+  que la app ofrezca el APK en vez de la actualización web.
+
+Cuándo se publica (GitHub Actions):
+
+- **Release** (`.github/workflows/release.yml`): sólo cuando cambia algo que va dentro de la app
+  (`src/`, `public/`, `android/`, `assets/`, `index.html`, configuración o dependencias). Corre las
+  pruebas, compila el APK firmado y publica la versión con el paquete web y la lista de cambios.
+  También se puede lanzar a mano.
+- **Tests** (`.github/workflows/ci.yml`): cambios sólo en pruebas, scripts o workflows corren las
+  pruebas sin publicar nada. Cambios sólo en documentación no corren nada.
 
 ## Diseño
 

@@ -19,13 +19,20 @@ export default forwardRef(function KamiBoard({ puzzle, saved, onChange, onSolved
     undo: b.undo,
     clear: () => b.set(initial),
     hint() {
-      // Best move within the remaining budget; greedy fallback when no exact plan is found.
-      const [mv] = solvePivot(s.grid, Math.max(1, left)) ?? plan(s.grid, 1);
+      // Play the best move within the remaining budget. If the board can no longer be solved in
+      // the moves left, start over and play the first move of an optimal solution.
+      let base = s;
+      let mv = left > 0 ? solvePivot(s.grid, left)?.[0] : null;
+      if (!mv) {
+        base = initial;
+        mv = (solvePivot(grid, moves) ?? plan(grid, 1))[0];
+      }
       if (!mv) return false;
       const [r, c, col] = mv;
+      const next = { grid: paint(base.grid, r, c, col), used: base.used + 1 };
       setColor(col);
-      const { id } = regions(s.grid);
-      setFlash(id[r][c]);
+      b.set(next);
+      setFlash(regions(next.grid).id[r][c]);
       setTimeout(() => setFlash(null), 1200);
       return { cells: [[r, c]] };
     },

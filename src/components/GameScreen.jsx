@@ -167,11 +167,18 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
     return () => sfx.leaveGame();
   }, [game.id, done, music]);
 
+  // The clock only runs while the board is on screen: leaving the app (or locking the phone) pauses it.
+  const [visible, setVisible] = useState(() => document.visibilityState !== 'hidden');
   useEffect(() => {
-    if (done || showRules || celebrating) return;
+    const on = () => setVisible(document.visibilityState !== 'hidden');
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
+  useEffect(() => {
+    if (done || showRules || celebrating || !visible) return;
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
-  }, [done, showRules, celebrating]);
+  }, [done, showRules, celebrating, visible]);
 
   const closeRules = () => {
     setShowRules(false);

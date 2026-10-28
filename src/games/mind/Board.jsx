@@ -24,7 +24,8 @@ export default forwardRef(function MindBoard({ puzzle, saved, onChange, onSolved
     clear: () => b.set({ ...s, current: s.locked.slice() }),
     hint() {
       const i = s.locked.findIndex((v) => v < 0);
-      if (i < 0) return false;
+      // Every peg already revealed: the next hint submits the (now correct) guess.
+      if (i < 0) return !s.failed && !isWin(s) ? (check(), { cells: [] }) : false;
       const locked = s.locked.slice();
       locked[i] = code[i];
       const current = s.current.slice();

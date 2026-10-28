@@ -30,8 +30,12 @@ export function cellAt(e, el, w, h) {
 
 // `reserve` is the vertical space a board needs for its own controls (palette, numpad…), so the
 // grid shrinks on short screens instead of pushing them off-screen. ~220px goes to header + toolbar.
-export const boardSize = (w, h, max = 440, reserve = 0) => {
-  const vw = Math.min(window.innerWidth - 32, max);
+// The width leaves the screen's side padding (2 × 18px), the board frame (2 × 2.5px, rounded up) and
+// any extra padding the board draws around itself (`pad`), so the whole board always fits.
+const SCREEN_PADDING = 36;
+const FRAME = 6;
+export const boardSize = (w, h, max = 440, reserve = 0, pad = 0) => {
+  const vw = Math.min(Math.min(window.innerWidth, 520) - SCREEN_PADDING - FRAME - pad, max);
   const vh = Math.min(window.innerHeight * 0.58, window.innerHeight - 220 - reserve);
   const cell = Math.floor(Math.min(vw / w, vh / h));
   return { cell, width: cell * w, height: cell * h };

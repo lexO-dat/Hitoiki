@@ -11,7 +11,7 @@ export default forwardRef(function BridgesBoard({ puzzle, saved, onChange, onSol
   const [msg, setMsg] = useState('');
   const svg = useRef(null);
   const press = useRef(null);
-  const { cell, width, height } = boardSize(w, h, 420);
+  const { cell, width, height } = boardSize(w, h, 420, 0, 12);
   const links = b.state;
   const pos = (i) => [islands[i].c * cell + cell / 2, islands[i].r * cell + cell / 2];
 

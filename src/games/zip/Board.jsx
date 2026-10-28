@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { useBoardState, boardSize } from '../common.js';
 import { adjacent, isSolved } from './logic.js';
 import { sfx } from '../../lib/sound.js';
@@ -30,8 +30,10 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
   }));
 
   // Pointer position in fractional cell units.
+  // The board's position is measured once per stroke (not on every move: that forces a layout each time).
+  const rectRef = useRef(null);
   const locate = (e) => {
-    const rect = el.current.getBoundingClientRect();
+    const rect = rectRef.current ?? el.current.getBoundingClientRect();
     return { x: ((e.clientX - rect.left) / rect.width) * w, y: ((e.clientY - rect.top) / rect.height) * h };
   };
   const cellOf = ({ x, y }) => {
@@ -115,7 +117,37 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
     }
   };
 
+  // Live tail: from the head of the line towards the finger (one row or column, at most one cell),
+  // drawn straight on the SVG so the line follows the finger without re-rendering the board.
+  const tail = useRef(null);
+  const drawTail = (pos) => {
+    const t = tail.current;
+    const cur = b.get();
+    const head = cur[cur.length - 1];
+    if (!t) return;
+    if (!pos || !head) return t.setAttribute('visibility', 'hidden');
+    const hx = head[1] + 0.5;
+    const hy = head[0] + 0.5;
+    let dx = pos.x - hx;
+    let dy = pos.y - hy;
+    if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+    else dx = 0;
+    dx = Math.max(-1, Math.min(1, dx));
+    dy = Math.max(-1, Math.min(1, dy));
+    // Towards a wall or a cell already used (other than the previous one): just a small nudge.
+    const next = [head[0] + Math.sign(dy), head[1] + Math.sign(dx)];
+    const prev = cur[cur.length - 2];
+    const blocked = !cellOf({ x: next[1] + 0.5, y: next[0] + 0.5 }) || (cur.some((q) => same(q, next)) && !(prev && same(prev, next)));
+    const k = blocked ? Math.min(1, 0.3 / Math.max(Math.abs(dx), Math.abs(dy), 0.01)) : 1;
+    t.setAttribute('x1', hx * cell);
+    t.setAttribute('y1', hy * cell);
+    t.setAttribute('x2', (hx + dx * k) * cell);
+    t.setAttribute('y2', (hy + dy * k) * cell);
+    t.setAttribute('visibility', Math.hypot(dx, dy) < 0.12 ? 'hidden' : 'visible');
+  };
+
   const down = (e) => {
+    rectRef.current = el.current.getBoundingClientRect();
     const pos = locate(e);
     const p = cellOf(pos);
     if (!p) return;
@@ -140,14 +172,19 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
     // Coalesced events carry the intermediate touch samples the browser batched together.
     const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
     for (const ev of events.length ? events : [e]) trace(locate(ev));
+    drawTail(locate(e));
   };
   const up = () => {
     if (!drawing.current) return;
     drawing.current = false;
     lastPos.current = null;
+    rectRef.current = null;
+    drawTail(null);
     b.end();
   };
 
+  // The grid cells never change while drawing: built once, so each step only updates the line.
+  const cells = useMemo(() => numbers.map((row, r) => row.map((_, c) => <div key={`${r}-${c}`} className="zcell" style={{ height: cell }} />)), [numbers, cell]);
   const pts = path.map(([r, c]) => `${c * cell + cell / 2},${r * cell + cell / 2}`).join(' ');
   const head = path[path.length - 1];
   return (
@@ -163,11 +200,12 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
       role="grid"
       aria-label="Tablero de ruta"
     >
-      {numbers.map((row, r) => row.map((_, c) => <div key={`${r}-${c}`} className="zcell" style={{ height: cell }} />))}
+      {cells}
       <svg className="zsvg" width={width} height={height}>
         {path.length > 1 && (
           <polyline points={pts} fill="none" stroke={color} strokeWidth={cell * 0.42} strokeLinecap="round" strokeLinejoin="round" />
         )}
+        <line ref={tail} stroke={color} strokeWidth={cell * 0.42} strokeLinecap="round" visibility="hidden" />
         {head && <circle cx={head[1] * cell + cell / 2} cy={head[0] * cell + cell / 2} r={cell * 0.24} fill={color} className="zhead" />}
         {numbers.flatMap((row, r) =>
           row.map((n, c) =>

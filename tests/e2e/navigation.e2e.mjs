@@ -22,8 +22,8 @@ test('loading screen shows first, then fades away', async () => {
   await p.context().close();
 });
 
-test('the bar stays put while switching sections and the pill follows', async () => {
-  const p = await page(b);
+test('the bar stays put while switching sections and the pill follows (phone)', async () => {
+  const p = await page(b, { mobile: true });
   await p.goto(srv.url);
   await p.waitForSelector('#boot', { state: 'detached' });
   await p.evaluate(() => (document.querySelector('.nav').dataset.mark = 'same'));
@@ -39,7 +39,8 @@ test('the bar stays put while switching sections and the pill follows', async ()
         seen.mark.add(nav?.dataset.mark);
         seen.opacity.add(getComputedStyle(nav).opacity);
         const r = nav.getBoundingClientRect();
-        if (r.bottom > innerHeight || r.top < innerHeight - 140) seen.offscreen++;
+        const vw = visualViewport.width;
+        if (r.bottom > innerHeight || r.top < innerHeight - 140 || r.left < 0 || r.right > vw + 1 || document.documentElement.scrollWidth > vw + 1) seen.offscreen++;
         await new Promise((r) => requestAnimationFrame(r));
       }
       return { mark: [...seen.mark].join(), opacity: [...seen.opacity].join(), offscreen: seen.offscreen, active: document.querySelector('.nav .on')?.textContent };
@@ -96,6 +97,17 @@ test('every section opens at the top, even if the previous one was still scrolli
     await p.waitForTimeout(900);
     assert.equal(await p.evaluate(() => Math.round(scrollY)), 0, `${target} did not open at the top`);
   }
+  await p.context().close();
+});
+
+test('headers stay sticky while scrolling', async () => {
+  const p = await page(b, { mobile: true, viewport: { width: 390, height: 600 } });
+  await p.goto(`${srv.url}#/lvl`);
+  await p.waitForSelector('#boot', { state: 'detached' });
+  await p.evaluate(() => window.scrollTo(0, 800));
+  await p.waitForTimeout(100);
+  assert.ok((await p.evaluate(() => scrollY)) > 0, 'the page scrolls');
+  assert.ok(Math.abs(await p.evaluate(() => document.querySelector('.topbar').getBoundingClientRect().top)) < 2, 'the header stays at the top');
   await p.context().close();
 });
 

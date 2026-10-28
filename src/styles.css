@@ -88,7 +88,11 @@ button:disabled { cursor: default; }
 .num { font-variant-numeric: tabular-nums; }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; letter-spacing: 0.01em; }
 
-.app { max-width: 520px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
+/* Nothing may widen the page sideways (e.g. a screen sliding in from the right): on phones that
+   enlarges the layout viewport, which pushes the fixed bottom bar out of place and disturbs scrolling.
+   `clip` (unlike `hidden`) doesn't create a scroll container, so the window keeps scrolling and
+   sticky headers keep working. */
+.app { max-width: 520px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; overflow-x: clip; }
 .screen { flex: 1; display: flex; flex-direction: column; padding: 0 18px calc(24px + env(safe-area-inset-bottom)); }
 
 /* Page transitions: sideways between the bottom-bar sections (following the direction of travel),

@@ -18,8 +18,9 @@ export async function browser() {
 export const dateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // A page with a given saved state (tutorials marked as seen, sound off) that records page errors.
-export async function page(b, { state = {}, viewport = { width: 390, height: 844 }, init } = {}) {
-  const ctx = await b.newContext({ viewport, permissions: ['clipboard-read', 'clipboard-write'] });
+// mobile: emulate a phone browser (layout viewport, touch), where horizontal overflow behaves differently.
+export async function page(b, { state = {}, viewport = { width: 390, height: 844 }, init, mobile = false } = {}) {
+  const ctx = await b.newContext({ viewport, permissions: ['clipboard-read', 'clipboard-write'], ...(mobile ? { isMobile: true, hasTouch: true } : {}) });
   const data = {
     schema: 2,
     settings: { sound: false, notify: false, ...(state.settings ?? {}) },

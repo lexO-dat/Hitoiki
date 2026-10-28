@@ -12,8 +12,11 @@ const BACKUP_DIR = 'Hitoiki';
 const BACKUP_FILE = `${BACKUP_DIR}/hitoiki-progreso.json`;
 const OLD_BACKUP_FILES = ['Pausa/pausa-progreso.json']; // written by versions named "Pausa"
 
-const prefs = async () => (await import('@capacitor/preferences').catch(() => null))?.Preferences;
-const fs = async () => await import('@capacitor/filesystem').catch(() => null);
+// Helpers return the plugin MODULES, never the plugin objects: Capacitor plugins are proxies that treat
+// any property (including `then`) as a native method, so returning one from an async function or awaiting
+// it leaves the promise pending forever.
+const prefsModule = () => import('@capacitor/preferences').catch(() => null);
+const fs = () => import('@capacitor/filesystem').catch(() => null);
 
 export function serialize(state = store.get()) {
   return JSON.stringify({ app: 'hitoiki', schema: SCHEMA, exportedAt: new Date().toISOString(), data: state });
@@ -42,8 +45,12 @@ export function merge(current, incoming) {
 let mirrorTimer = null;
 let fileTimer = null;
 
+// Resolves to `fallback` if a native call takes too long, so nothing can ever hang the app.
+const withTimeout = (promise, ms, fallback = null) =>
+  Promise.race([promise, new Promise((resolve) => setTimeout(() => resolve(fallback), ms))]);
+
 async function writeMirror(state) {
-  const P = await prefs();
+  const P = (await prefsModule())?.Preferences;
   if (P) await P.set({ key: PREF_KEY, value: JSON.stringify(state) });
 }
 
@@ -54,39 +61,52 @@ async function writeBackupFile(state) {
   await Filesystem.writeFile({ path: BACKUP_FILE, data: serialize(state), directory: Directory.Documents, encoding: Encoding.UTF8, recursive: true });
 }
 
-// Call once at startup (before rendering): restores data if local storage was wiped, then keeps the
-// durable copies up to date on every change.
+// Never let an empty state overwrite a durable copy (e.g. a restore that has not finished yet);
+// only an explicit reset may do that, through wipeBackups().
+function scheduleBackups(state) {
+  if (isEmpty(state)) return;
+  clearTimeout(mirrorTimer);
+  mirrorTimer = setTimeout(() => writeMirror(state).catch(() => {}), 800);
+  clearTimeout(fileTimer);
+  fileTimer = setTimeout(() => writeBackupFile(state).catch(() => {}), 4000);
+}
+
+async function readDurableCopy() {
+  const P = (await prefsModule())?.Preferences;
+  const saved = P ? (await withTimeout(P.get({ key: PREF_KEY }), 4000))?.value : null;
+  if (saved) return migrate(JSON.parse(saved));
+  // Fresh install after an uninstall: the backup file may still be in Documents.
+  const m = await fs();
+  for (const path of [BACKUP_FILE, ...OLD_BACKUP_FILES]) {
+    const res = m && (await withTimeout(m.Filesystem.readFile({ path, directory: m.Directory.Documents, encoding: m.Encoding.UTF8 }).catch(() => null), 4000));
+    if (res?.data) return parseBackup(res.data);
+  }
+  return null;
+}
+
+// Runs in the background after the first render (never blocks startup). If local storage was wiped,
+// the durable copy is merged back in, so anything played meanwhile is kept too.
 export async function initBackups() {
   if (!isNative()) return;
+  store.onWrite(scheduleBackups);
   try {
     if (isEmpty(store.get())) {
-      const P = await prefs();
-      const saved = P && (await P.get({ key: PREF_KEY })).value;
-      if (saved) store.replace(JSON.parse(saved));
-      else {
-        // Fresh install after an uninstall: the backup file may still be in Documents.
-        const m = await fs();
-        for (const path of [BACKUP_FILE, ...OLD_BACKUP_FILES]) {
-          const res = await m?.Filesystem.readFile({ path, directory: m.Directory.Documents, encoding: m.Encoding.UTF8 }).catch(() => null);
-          if (res?.data) {
-            store.replace(parseBackup(res.data));
-            break;
-          }
-        }
-      }
+      const restored = await readDurableCopy();
+      if (restored && !isEmpty(restored)) store.replace({ ...merge(store.get(), restored), updatedAt: Date.now() });
     }
   } catch {
-    // never block startup on a restore problem
+    // a failed restore must never break the game
   }
-  store.onWrite((state) => {
-    clearTimeout(mirrorTimer);
-    mirrorTimer = setTimeout(() => writeMirror(state).catch(() => {}), 800);
-    clearTimeout(fileTimer);
-    fileTimer = setTimeout(() => writeBackupFile(state).catch(() => {}), 4000);
-  });
-  // Make sure both copies exist even before the first change.
-  writeMirror(store.get()).catch(() => {});
-  writeBackupFile(store.get()).catch(() => {});
+  scheduleBackups(store.get());
+}
+
+// Explicit "erase progress": also clear the durable copies so they are not restored on next start.
+export async function wipeBackups() {
+  if (!isNative()) return;
+  clearTimeout(mirrorTimer);
+  clearTimeout(fileTimer);
+  const empty = store.get();
+  await Promise.allSettled([writeMirror(empty), writeBackupFile(empty)]);
 }
 
 // Manual export. Android: saves into Documents/Hitoiki and opens the share sheet. Web: downloads the file.

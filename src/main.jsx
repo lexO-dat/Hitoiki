@@ -11,8 +11,11 @@ import './styles.css';
 import './games/games.css';
 
 import { initBackups } from './lib/backup.js';
+import { showFatalError } from './lib/fatal.js';
 
-// Restore saved progress from the durable copies (Android) before the first render.
-initBackups()
-  .catch(() => {})
-  .finally(() => createRoot(document.getElementById('root')).render(<App />));
+window.addEventListener('error', (e) => showFatalError(e.error ?? e.message));
+window.addEventListener('unhandledrejection', (e) => showFatalError(e.reason, { soft: true }));
+
+// Render immediately; durable copies are restored in the background (Android) and merged in.
+createRoot(document.getElementById('root')).render(<App />);
+initBackups().catch(() => {});

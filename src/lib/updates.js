@@ -19,15 +19,12 @@ export function isNewer(a, b) {
   return false;
 }
 
-let updater = null;
-async function plugin() {
-  if (!updater) updater = (await import('@capgo/capacitor-updater')).CapacitorUpdater;
-  return updater;
-}
+// Returns the module, not the plugin object: awaiting a Capacitor plugin proxy never resolves.
+const updaterModule = () => import('@capgo/capacitor-updater');
 
 // Must run on every start: confirms the current bundle works, otherwise the plugin rolls back.
 export async function markAppReady() {
-  if (isNative()) await (await plugin()).notifyAppReady();
+  if (isNative()) await (await updaterModule()).CapacitorUpdater.notifyAppReady();
 }
 
 // Returns { status: 'latest' | 'web' | 'native' | 'error', version?, notes?, bundleUrl?, apkUrl?, message? }
@@ -68,7 +65,7 @@ export async function applyUpdate(info, onProgress) {
     window.location.reload();
     return;
   }
-  const up = await plugin();
+  const up = (await updaterModule()).CapacitorUpdater;
   const sub = await up.addListener('download', (e) => onProgress?.(e.percent));
   try {
     const bundle = await up.download({ url: info.bundleUrl, version: info.version });

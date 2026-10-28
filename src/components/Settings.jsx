@@ -4,7 +4,7 @@ import { sfx } from '../lib/sound.js';
 import { useState } from 'react';
 import { ensurePermission, testNotification } from '../lib/notify.js';
 import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
-import { exportBackup, importBackup } from '../lib/backup.js';
+import { exportBackup, importBackup, wipeBackups } from '../lib/backup.js';
 import { Capacitor } from '@capacitor/core';
 
 const setSetting = (k, v) => store.update((s) => ({ ...s, settings: { ...s.settings, [k]: v } }));
@@ -23,7 +23,10 @@ export default function Settings({ navigate }) {
     <button className="switch" role="switch" aria-checked={!!settings[k]} onClick={() => setSetting(k, !settings[k])} />
   );
   const reset = () => {
-    if (confirm('¿Borrar todo el progreso, rachas y resultados?')) store.update((s) => ({ ...s, results: {}, saves: {}, tutorialsSeen: {} }));
+    if (confirm('¿Borrar todo el progreso, rachas y resultados?')) {
+      store.update((s) => ({ ...s, results: {}, saves: {}, tutorialsSeen: {} }));
+      wipeBackups().catch(() => {});
+    }
   };
   return (
     <div className="screen">

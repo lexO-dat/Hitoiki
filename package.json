@@ -10,7 +10,8 @@
     "test": "node --test tests/*.test.js",
     "validate-levels": "node scripts/validate_levels.mjs",
     "android:sync": "vite build && cap sync android",
-    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug"
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleDebug",
+    "smoke:native": "node scripts/native-smoke.cjs"
   },
   "dependencies": {
     "@capacitor/android": "7.6.9",

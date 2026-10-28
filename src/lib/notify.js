@@ -19,15 +19,12 @@ const DAILY = [
   ['Hoy toca puzzle', 'Pequeños retos, gran satisfacción.'],
 ];
 
-let LN = null;
-async function plugin() {
-  if (!LN) LN = (await import('@capacitor/local-notifications')).LocalNotifications;
-  return LN;
-}
+// Returns the module, not the plugin object: awaiting a Capacitor plugin proxy never resolves.
+const notificationsModule = () => import('@capacitor/local-notifications');
 
 export async function ensurePermission() {
   if (isNative()) {
-    const ln = await plugin();
+    const ln = (await notificationsModule()).LocalNotifications;
     const cur = await ln.checkPermissions();
     if (cur.display === 'granted') return true;
     return (await ln.requestPermissions()).display === 'granted';
@@ -75,7 +72,7 @@ export async function syncReminders() {
   }
 
   if (isNative()) {
-    const ln = await plugin();
+    const ln = (await notificationsModule()).LocalNotifications;
     const pending = await ln.getPending();
     if (pending.notifications.length) await ln.cancel({ notifications: pending.notifications.map((n) => ({ id: n.id })) });
     if (!plan.length) return;
@@ -107,7 +104,7 @@ export async function testNotification() {
   if (!(await ensurePermission())) return false;
   const [title, body] = DAILY[0];
   if (isNative()) {
-    const ln = await plugin();
+    const ln = (await notificationsModule()).LocalNotifications;
     await ln.schedule({ notifications: [{ id: 999, title, body, schedule: { at: new Date(Date.now() + 3000) }, smallIcon: 'ic_stat_pausa' }] });
   } else {
     new Notification(title, { body, icon: './icons/icon-192.png' });

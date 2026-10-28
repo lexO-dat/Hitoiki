@@ -1,0 +1,9 @@
+{
+  "appId": "cl.pausa.puzzles",
+  "appName": "Pausa",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#f6f2ef" },
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_pausa", "iconColor": "#303030" }
+  }
+}

@@ -50,12 +50,14 @@ export default forwardRef(function QueensBoard({ puzzle, saved, onChange, onSolv
         changed = true;
       }
     }
+    if (!d.moved) b.begin();
     d.moved = true;
-    if (changed) b.set(next);
+    if (changed) b.replace(next);
   };
   const up = () => {
     const d = drag.current;
     drag.current = null;
+    if (d?.moved) b.end();
     if (!d || d.moved) return;
     const [r, c] = d.start;
     const next = clone2(b.get());
@@ -72,7 +74,10 @@ export default forwardRef(function QueensBoard({ puzzle, saved, onChange, onSolv
       onPointerDown={down}
       onPointerMove={move}
       onPointerUp={up}
-      onPointerCancel={() => (drag.current = null)}
+      onPointerCancel={() => {
+        if (drag.current?.moved) b.end();
+        drag.current = null;
+      }}
       role="grid"
       aria-label="Tablero de coronas"
     >

@@ -40,6 +40,7 @@ export default forwardRef(function LitsBoard({ puzzle, saved, onChange, onSolved
     const cur = b.get()[p[0]][p[1]];
     const target = markMode ? (cur === 2 ? 0 : 2) : cur === 1 ? 0 : 1;
     drag.current = { target, seen: new Set() };
+    b.begin();
     apply(p);
   };
   const apply = (p) => {
@@ -49,14 +50,16 @@ export default forwardRef(function LitsBoard({ puzzle, saved, onChange, onSolved
     d.seen.add(k);
     const next = clone2(b.get());
     next[p[0]][p[1]] = d.target;
-    b.set(next);
+    b.replace(next);
   };
   const move = (e) => {
     const p = drag.current && cellAt(e, el.current, w, h);
     if (p) apply(p);
   };
   const up = () => {
+    if (!drag.current) return;
     drag.current = null;
+    b.end();
     if (analyse(puzzle, shadeOf(b.get())).bad.size) onMistake?.();
   };
 
@@ -69,7 +72,7 @@ export default forwardRef(function LitsBoard({ puzzle, saved, onChange, onSolved
         onPointerDown={down}
         onPointerMove={move}
         onPointerUp={up}
-        onPointerCancel={() => (drag.current = null)}
+        onPointerCancel={up}
       >
         {b.state.map((row, r) =>
           row.map((v, c) => {

@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react';
-import { useBoardState, cellAt, boardSize } from '../common.js';
+import { useBoardState, boardSize } from '../common.js';
 import { adjacent, isSolved } from './logic.js';
+import { sfx } from '../../lib/sound.js';
 
 export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved, onMistake, color }, ref) {
   const { w, h, numbers, solution } = puzzle;
@@ -10,6 +11,7 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
   const { cell, width, height } = boardSize(w, h, 420);
   const path = b.state;
   const key = (p) => p.join(',');
+  const same = (a, z) => a[0] === z[0] && a[1] === z[1];
 
   // Highest number already collected along the path decides which number may come next.
   const reached = (p) => p.reduce((m, [r, c]) => Math.max(m, numbers[r][c]), 0);
@@ -27,42 +29,124 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
     },
   }));
 
-  const extend = (p) => {
+  // Pointer position in fractional cell units.
+  const locate = (e) => {
+    const rect = el.current.getBoundingClientRect();
+    return { x: ((e.clientX - rect.left) / rect.width) * w, y: ((e.clientY - rect.top) / rect.height) * h };
+  };
+  const cellOf = ({ x, y }) => {
+    const r = Math.floor(y);
+    const c = Math.floor(x);
+    return r < 0 || c < 0 || r >= h || c >= w ? null : [r, c];
+  };
+
+  // One orthogonal step; returns false when the move is not allowed.
+  const step = (p) => {
     const cur = b.get();
-    const i = cur.findIndex((q) => key(q) === key(p));
-    if (i !== undefined) {
-      // Moving back over the line rewinds it.
-      if (i < cur.length - 1) b.set(cur.slice(0, i + 1));
-      return;
+    const i = cur.findIndex((q) => same(q, p));
+    if (i >= 0) {
+      // Moving back over the line rewinds it to that cell.
+      if (i < cur.length - 1) b.replace(cur.slice(0, i + 1));
+      return true;
     }
     const last = cur[cur.length - 1];
-    if (!last || !adjacent(last, p)) return;
+    if (!last || !adjacent(last, p)) return false;
     const n = numbers[p[0]][p[1]];
     if (n && n !== reached(cur) + 1) {
       onMistake?.();
+      return false;
+    }
+    b.replace([...cur, p]);
+    sfx.step(cur.length);
+    return true;
+  };
+
+  // Try to make `target` the new head. Handles neighbours, diagonal corner-cuts and longer jumps.
+  const reach = (target) => {
+    const cur = b.get();
+    const last = cur[cur.length - 1];
+    if (!last || same(last, target)) return;
+    if (cur.some((q) => same(q, target)) || adjacent(last, target)) return void step(target);
+    const dr = target[0] - last[0];
+    const dc = target[1] - last[1];
+    if (Math.abs(dr) === 1 && Math.abs(dc) === 1) {
+      // Finger cut a corner: go through whichever of the two corner cells is still free.
+      const prev = cur[cur.length - 2];
+      const vertical = prev ? last[0] !== prev[0] : false;
+      // Prefer continuing in the current direction, then turning.
+      const corners = vertical ? [[last[0] + dr, last[1]], [last[0], last[1] + dc]] : [[last[0], last[1] + dc], [last[0] + dr, last[1]]];
+      const free = corners.filter((m) => !cur.some((q) => same(q, m)) && (!numbers[m[0]][m[1]] || numbers[m[0]][m[1]] === reached(cur) + 1));
+      for (const m of free) {
+        if (step(m)) return void step(target);
+      }
       return;
     }
-    b.set([...cur, p]);
+    // Longer jump: walk one cell at a time along the larger gap first.
+    for (let guard = 0; guard < w + h; guard++) {
+      const now = b.get();
+      const head = now[now.length - 1];
+      if (same(head, target)) return;
+      const r = target[0] - head[0];
+      const c = target[1] - head[1];
+      const next = Math.abs(r) >= Math.abs(c) ? [head[0] + Math.sign(r), head[1]] : [head[0], head[1] + Math.sign(c)];
+      if (!step(next)) return;
+    }
+  };
+
+  // Follow the finger between two pointer events in quarter-cell samples, so fast swipes keep their shape.
+  const lastPos = useRef(null);
+  const trace = (pos) => {
+    const from = lastPos.current ?? pos;
+    lastPos.current = pos;
+    const dist = Math.hypot(pos.x - from.x, pos.y - from.y);
+    const n = Math.max(1, Math.ceil(dist / 0.25));
+    for (let k = 1; k <= n; k++) {
+      const s2 = { x: from.x + ((pos.x - from.x) * k) / n, y: from.y + ((pos.y - from.y) * k) / n };
+      const p = cellOf(s2);
+      if (!p) continue;
+      // Ignore jitter near cell borders: only react once the sample is well inside a cell.
+      const fx = s2.x - p[1];
+      const fy = s2.y - p[0];
+      if (fx < 0.15 || fx > 0.85 || fy < 0.15 || fy > 0.85) continue;
+      reach(p);
+    }
   };
 
   const down = (e) => {
-    const p = cellAt(e, el.current, w, h);
+    const pos = locate(e);
+    const p = cellOf(pos);
     if (!p) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    b.begin();
     drawing.current = true;
-    const i = path.findIndex((q) => key(q) === key(p));
-    if (i >= 0) b.set(path.slice(0, i + 1));
-    else if (numbers[p[0]][p[1]] === 1) b.set([p]);
-    else if (path.length && adjacent(path[path.length - 1], p)) extend(p);
-    else drawing.current = false;
+    lastPos.current = pos;
+    const cur = b.get();
+    const i = cur.findIndex((q) => same(q, p));
+    if (i >= 0) b.replace(cur.slice(0, i + 1));
+    else if (numbers[p[0]][p[1]] === 1) b.replace([p]);
+    else if (cur.length && adjacent(cur[cur.length - 1], p)) step(p);
+    else {
+      drawing.current = false;
+      b.end();
+    }
   };
   const move = (e) => {
     if (!drawing.current) return;
-    const p = cellAt(e, el.current, w, h);
-    if (p) extend(p);
+    e.preventDefault();
+    // Coalesced events carry the intermediate touch samples the browser batched together.
+    const events = e.nativeEvent.getCoalescedEvents?.() ?? [];
+    for (const ev of events.length ? events : [e]) trace(locate(ev));
+  };
+  const up = () => {
+    if (!drawing.current) return;
+    drawing.current = false;
+    lastPos.current = null;
+    b.end();
   };
 
   const pts = path.map(([r, c]) => `${c * cell + cell / 2},${r * cell + cell / 2}`).join(' ');
+  const head = path[path.length - 1];
   return (
     <div
       ref={el}
@@ -70,8 +154,9 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
       style={{ width, height, gridTemplateColumns: `repeat(${w}, ${cell}px)` }}
       onPointerDown={down}
       onPointerMove={move}
-      onPointerUp={() => (drawing.current = false)}
-      onPointerCancel={() => (drawing.current = false)}
+      onPointerUp={up}
+      onPointerCancel={up}
+      onLostPointerCapture={up}
       role="grid"
       aria-label="Tablero de ruta"
     >
@@ -80,7 +165,7 @@ export default forwardRef(function ZipBoard({ puzzle, saved, onChange, onSolved,
         {path.length > 1 && (
           <polyline points={pts} fill="none" stroke={color} strokeWidth={cell * 0.42} strokeLinecap="round" strokeLinejoin="round" />
         )}
-        {path.length === 1 && <circle cx={path[0][1] * cell + cell / 2} cy={path[0][0] * cell + cell / 2} r={cell * 0.21} fill={color} />}
+        {head && <circle cx={head[1] * cell + cell / 2} cy={head[0] * cell + cell / 2} r={cell * 0.24} fill={color} className="zhead" />}
         {numbers.flatMap((row, r) =>
           row.map((n, c) =>
             n ? (

@@ -3,6 +3,9 @@ import { praise } from '../lib/daily.js';
 import { formatTime } from '../lib/dates.js';
 import { clearProgress, computeStreak, saveProgress, saveResult, store, useStore } from '../lib/storage.js';
 import { vibrate } from '../lib/theme.js';
+import { sfx } from '../lib/sound.js';
+import Celebration from './Celebration.jsx';
+import { syncReminders } from '../lib/notify.js';
 import { Back, Bulb, Eraser, Flame, Help, Play, Undo } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 
@@ -90,41 +93,91 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
   const [done, setDone] = useState(existing ?? null);
   const [showRules, setShowRules] = useState(() => !store.get().tutorialsSeen[game.id]);
   const [round, setRound] = useState(0);
+  const [celebrating, setCelebrating] = useState(false);
+  const wrap = useRef(null);
   const meta = useRef({ time: elapsed, hints, mistakes });
   meta.current = { time: elapsed, hints, mistakes };
 
   useEffect(() => {
-    if (done || showRules) return;
+    if (done || showRules || celebrating) return;
     const t = setInterval(() => setElapsed((e) => e + 1), 1000);
     return () => clearInterval(t);
-  }, [done, showRules]);
+  }, [done, showRules, celebrating]);
 
   const closeRules = () => {
     setShowRules(false);
     store.update((s) => ({ ...s, tutorialsSeen: { ...s.tutorialsSeen, [game.id]: true } }));
   };
 
+  // Persist in-progress boards at most a few times per second (drags change state on every cell).
+  const pending = useRef(null);
+  const flush = useCallback(() => {
+    if (!pending.current) return;
+    clearTimeout(pending.current.timer);
+    saveProgress(storageKey, pending.current.data);
+    pending.current = null;
+  }, [storageKey]);
   const onChange = useCallback(
     (state) => {
-      if (!done) saveProgress(storageKey, { state, meta: meta.current });
+      if (done) return;
+      // Ruta plays its own rising notes; every other board gets a soft pluck per change.
+      if (game.id !== 'zip') sfx.tap();
+      if (pending.current) clearTimeout(pending.current.timer);
+      pending.current = { data: { state, meta: meta.current }, timer: setTimeout(flush, 400) };
     },
-    [storageKey, done],
+    [done, flush, game.id],
   );
+  useEffect(() => {
+    const hide = () => document.visibilityState === 'hidden' && flush();
+    document.addEventListener('visibilitychange', hide);
+    return () => {
+      document.removeEventListener('visibilitychange', hide);
+      flush();
+    };
+  }, [flush]);
   const onSolved = useCallback(() => {
+    if (pending.current) {
+      clearTimeout(pending.current.timer);
+      pending.current = null;
+    }
     const result = { ...meta.current };
+    saveResult(storageKey, result);
+    syncReminders().catch(() => {});
     vibrate(store.get().settings.haptics, [20, 40, 20]);
+    sfx.solve();
+    setCelebrating(true);
+    // Let the board celebrate before switching to the result screen.
     setTimeout(() => {
-      saveResult(storageKey, result);
+      setCelebrating(false);
       setDone(result);
-    }, 650);
+    }, 1900);
   }, [storageKey]);
   const onMistake = useCallback(() => {
     setMistakes((m) => m + 1);
+    sfx.error();
     vibrate(store.get().settings.haptics, 30);
   }, []);
 
+  // Wave across the cells, rippling out from the centre of the board.
+  useEffect(() => {
+    if (!celebrating || !wrap.current) return;
+    const area = wrap.current.getBoundingClientRect();
+    const cx = area.left + area.width / 2;
+    const cy = area.top + area.height / 2;
+    const cells = wrap.current.querySelectorAll('.qcell, .tcell, .zcell, .scell, .pcell, .lcell, .kamicell, .krect, .bisland, .setcard, .peg');
+    cells.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const d = Math.hypot(r.left + r.width / 2 - cx, r.top + r.height / 2 - cy);
+      el.style.animationDelay = `${Math.round(d * 1.6)}ms`;
+      el.classList.add('wave');
+    });
+  }, [celebrating]);
+
   const hint = () => {
-    if (board.current?.hint()) setHints((h) => h + 1);
+    if (board.current?.hint()) {
+      setHints((h) => h + 1);
+      sfx.hint();
+    }
   };
   const replay = () => {
     clearProgress(storageKey);
@@ -168,7 +221,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
         {settings.showTimer && <span aria-label="Tiempo">{formatTime(elapsed)}</span>}
         <span>{subtitle}</span>
       </div>
-      <div className="board-wrap">
+      <div ref={wrap} className={`board-wrap${celebrating ? ' celebrate' : ''}`}>
         <Board
           key={round}
           ref={board}
@@ -179,15 +232,30 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
           onSolved={onSolved}
           onMistake={onMistake}
         />
+        {celebrating && <Celebration color={game.main} />}
       </div>
       <div className="toolbar">
-        <button className="btn" onClick={() => board.current?.undo()}>
+        <button
+          className="btn"
+          disabled={celebrating}
+          onClick={() => {
+            sfx.undo();
+            board.current?.undo();
+          }}
+        >
           <Undo /> Deshacer
         </button>
-        <button className="btn" onClick={() => board.current?.clear()}>
+        <button
+          className="btn"
+          disabled={celebrating}
+          onClick={() => {
+            sfx.undo();
+            board.current?.clear();
+          }}
+        >
           <Eraser /> Limpiar
         </button>
-        <button className="btn" onClick={hint}>
+        <button className="btn" onClick={hint} disabled={celebrating}>
           <Bulb /> Pista
           <span className="hint-count">{hints ? `usadas: ${hints}` : 'gratis'}</span>
         </button>

@@ -11,6 +11,9 @@ import { longDate, todayKey } from './lib/dates.js';
 import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/levels.js';
 import { resultKey, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
+import { sfx } from './lib/sound.js';
+import { syncReminders } from './lib/notify.js';
+import { Capacitor } from '@capacitor/core';
 
 const parse = () => (window.location.hash.replace(/^#/, '') || '/').split('/').filter(Boolean);
 const modeLabel = (m) => MODES.find((x) => x.id === m)?.label ?? m;
@@ -48,9 +51,45 @@ function ClassicPlay({ gameId, index, navigate }) {
 export default function App() {
   const theme = useStore((s) => s.settings.theme);
   useApplyTheme(theme);
+  const reminders = useStore((s) => `${s.settings.reminders}|${s.settings.reminderHour}`);
   const [route, setRoute] = useState(parse);
+
+  // Keep scheduled reminders in sync with settings, and refresh them whenever the app comes back.
+  useEffect(() => {
+    syncReminders().catch(() => {});
+    const on = () => document.visibilityState === 'visible' && syncReminders().catch(() => {});
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, [reminders]);
+
+  // Android back button: go back inside the app, close it from the home screen.
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let handle;
+    import('@capacitor/app').then(({ App: NativeApp }) => {
+      handle = NativeApp.addListener('backButton', () => {
+        if (parse().length) window.history.back();
+        else NativeApp.exitApp();
+      });
+    });
+    return () => handle?.then?.((h) => h.remove());
+  }, []);
   const [date, setDate] = useState(todayKey);
   const [mode, setMode] = useState('standard');
+
+  // Audio can only start after a user gesture; menu buttons get a tiny soft click.
+  useEffect(() => {
+    const unlock = () => sfx.unlock();
+    const click = (e) => {
+      if (e.target.closest?.('.card, .mini, .tab, .nav button, .chips button, .lvlbtn, .icon-btn, .day, .result .btn')) sfx.ui();
+    };
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('click', click, true);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('click', click, true);
+    };
+  }, []);
 
   useEffect(() => {
     const on = () => {

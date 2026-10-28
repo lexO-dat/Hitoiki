@@ -5,7 +5,7 @@ const KEY = 'logica-diaria:v1';
 export const STREAK_REQUIRED = 4; // puzzles per day that keep the streak alive
 
 const defaults = {
-  settings: { theme: 'system', showTimer: true, haptics: true },
+  settings: { theme: 'system', showTimer: true, haptics: true, sound: true, volume: 0.7, reminders: false, reminderHour: 19 },
   results: {}, // `${date}|${mode}|${game}` -> { time, hints, mistakes, solvedAt }
   saves: {}, // in-progress board state, same key
   tutorialsSeen: {},

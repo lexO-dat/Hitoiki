@@ -1,4 +1,6 @@
-# Lógica Diaria
+# Pausa · puzzles diarios
+
+<img src="public/icons/icon-512.png" width="96" alt="Pausa" />
 
 Colección de puzzles lógicos diarios hecha en React. Once juegos, tres modos de juego, tema claro y
 oscuro, y todo el progreso guardado en el dispositivo.
@@ -12,6 +14,23 @@ npm test                 # tests de los generadores
 npm run validate-levels  # comprueba que cada nivel de public/levels tiene una solución válida
 npm run build            # build estático en dist/
 ```
+
+## App Android
+
+Cada push a `main` compila un APK en GitHub Actions y lo publica en **Releases** del repositorio
+(archivo `Pausa-1.0.N.apk`). Para instalarlo, ábrelo en el teléfono y permite "instalar apps de
+fuentes desconocidas".
+
+Para compilarlo en tu equipo necesitas Android Studio (o el Android SDK) y Java 21:
+
+```bash
+npm run android:apk      # build web + sync + ./gradlew assembleDebug
+# APK en android/app/build/outputs/apk/debug/app-debug.apk
+npx cap open android     # abrir el proyecto en Android Studio
+```
+
+La app Android usa [Capacitor](https://capacitorjs.com): el mismo código React dentro de una app
+nativa, con notificaciones locales y vibración nativa.
 
 ## Puzzles
 
@@ -29,7 +48,18 @@ npm run build            # build estático en dist/
 | **Tríos** | Encuentra los tríos de cartas donde cada rasgo es todo igual o todo distinto. |
 | **Sudoku** | El clásico 9×9. |
 
-Todos tienen deshacer, limpiar, pistas, conteo de errores, cronómetro y pantalla de resultado.
+Todos tienen deshacer, limpiar, pistas, conteo de errores, cronómetro, animación de tablero
+completado y pantalla de resultado. Los tableros de arrastre (Ruta, Coronas, Shikaku, LITS, Puentes)
+están pensados para dedos: siguen la trayectoria completa del trazo y cada trazo es un solo paso de
+deshacer.
+
+## Sonido y recordatorios
+
+- **Sonidos cozy**: sintetizados en el momento con Web Audio (notas suaves en escala pentatónica con
+  un poco de reverberación); sin archivos de audio. Se pueden apagar o ajustar el volumen en Ajustes.
+- **Recordatorios**: un aviso diario a la hora que elijas, con mensajes que rotan, y un aviso de racha
+  a las 21:30 si aún no completaste el día. En Android son notificaciones programadas que llegan con la
+  app cerrada; en el navegador sólo funcionan con la página abierta.
 
 ## Modos
 
@@ -60,6 +90,9 @@ src/
   components/          Diario, Infinito, Niveles, pantalla de juego, estadísticas, ajustes
   lib/                 RNG determinista, fechas, almacenamiento, carga de niveles, tema
 public/levels/         packs de niveles en JSON
+public/icons/          logotipo e íconos
+android/               proyecto Android (Capacitor)
+assets/                fuentes del ícono y la pantalla de inicio de Android
 scripts/               validación de los packs de niveles
 tests/                 tests de los generadores
 ```

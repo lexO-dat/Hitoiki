@@ -226,3 +226,11 @@ table.games th { font-family: var(--serif); font-weight: 600; font-size: 14px; }
 .empty-state h3 { font-family: var(--serif); margin: 0 0 6px; }
 .empty-state pre { background: var(--bg-2); padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 12px; }
 .thumb.right { justify-self: end; }
+.slider { accent-color: var(--text); width: 150px; }
+
+/* Brand */
+.brand { display: flex; justify-content: center; }
+.logo { display: inline-flex; align-items: center; gap: 8px; }
+.logo-word { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 28px; letter-spacing: -0.3px; }
+.select { font: inherit; border: 1.5px solid var(--stroke); border-radius: 9px; background: var(--surface); color: var(--text); padding: 5px 8px; }
+.muted { color: var(--text-2); font-size: 11px; }

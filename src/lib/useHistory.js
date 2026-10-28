@@ -1,9 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 
 // Board state with an undo stack. `set` accepts a value or an updater.
+// Drag gestures call `begin()` once, then `replace()` for every intermediate state and `end()` when
+// the finger lifts, so a whole stroke is a single undo step.
 export function useHistory(initial) {
   const current = useRef(initial);
   const past = useRef([]);
+  const stroke = useRef(null);
   const [, render] = useState(0);
   const commit = (value) => {
     current.current = value;
@@ -17,6 +20,20 @@ export function useHistory(initial) {
     if (past.current.length > 300) past.current.shift();
     commit(value);
   }, []);
+  const begin = useCallback(() => {
+    stroke.current = current.current;
+  }, []);
+  const replace = useCallback((value) => {
+    if (value !== current.current) commit(value);
+  }, []);
+  const end = useCallback(() => {
+    const start = stroke.current;
+    stroke.current = null;
+    if (start !== null && start !== current.current) {
+      past.current.push(start);
+      if (past.current.length > 300) past.current.shift();
+    }
+  }, []);
   const undo = useCallback(() => {
     if (past.current.length) commit(past.current.pop());
   }, []);
@@ -25,5 +42,5 @@ export function useHistory(initial) {
     commit(value);
   }, []);
   const get = useCallback(() => current.current, []);
-  return { state: current.current, get, set, undo, reset, canUndo: past.current.length > 0 };
+  return { state: current.current, get, set, begin, replace, end, undo, reset, canUndo: past.current.length > 0 };
 }

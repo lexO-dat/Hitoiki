@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 
 export function useApplyTheme(mode) {
   useEffect(() => {
@@ -14,6 +15,16 @@ export function useApplyTheme(mode) {
   }, [mode]);
 }
 
+let haptics = null;
+
+// Short taps use native haptics on Android; patterns and browsers fall back to navigator.vibrate.
 export function vibrate(enabled, ms = 10) {
-  if (enabled && navigator.vibrate) navigator.vibrate(ms);
+  if (!enabled) return;
+  if (Capacitor.isNativePlatform()) {
+    const run = (h) => (Array.isArray(ms) ? h.Haptics.notification({ type: 'SUCCESS' }) : h.Haptics.impact({ style: ms > 20 ? 'MEDIUM' : 'LIGHT' }));
+    if (haptics) run(haptics);
+    else import('@capacitor/haptics').then((h) => run((haptics = h))).catch(() => {});
+    return;
+  }
+  navigator.vibrate?.(ms);
 }

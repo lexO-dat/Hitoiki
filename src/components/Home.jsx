@@ -5,6 +5,7 @@ import { completedOn, computeStreak, resultKey, STREAK_REQUIRED, useStore } from
 import { Back, Chart, Flame, Gear } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 import Nav from './Nav.jsx';
+import Logo from './Logo.jsx';
 
 export default function Home({ date, mode, setDate, setMode, navigate }) {
   const s = useStore();
@@ -32,7 +33,9 @@ export default function Home({ date, mode, setDate, setMode, navigate }) {
         <button className="icon-btn" onClick={() => navigate('/stats')} aria-label={`Racha de ${streak} días. Ver estadísticas`}>
           <Flame width="22" height="22" /> {streak}
         </button>
-        <h1>Lógica Diaria</h1>
+        <h1 className="brand">
+          <Logo size={30} />
+        </h1>
         <div className="right">
           <button className="icon-btn" onClick={() => navigate('/stats')} aria-label="Estadísticas">
             <Chart />

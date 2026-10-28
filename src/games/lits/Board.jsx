@@ -14,7 +14,7 @@ export default forwardRef(function LitsBoard({ puzzle, saved, onChange, onSolved
   const [markMode, setMarkMode] = useState(false);
   const el = useRef(null);
   const drag = useRef(null);
-  const { cell, width, height } = boardSize(w, h, 420);
+  const { cell, width, height } = boardSize(w, h, 420, 64);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,

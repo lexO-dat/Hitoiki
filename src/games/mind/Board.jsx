@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { useBoardState } from '../common.js';
 import { score } from './logic.js';
 
@@ -10,7 +10,14 @@ export default forwardRef(function MindBoard({ puzzle, saved, onChange, onSolved
   const isWin = (s) => s.guesses.some((g) => score(code, g).exact === length);
   const b = useBoardState({ initial, saved, onChange, isSolved: isWin, onSolved });
   const [msg, setMsg] = useState('');
+  const rowsRef = useRef(null);
   const s = b.state;
+
+  // Keep the row being played in view as the list of attempts grows.
+  useEffect(() => {
+    const el = rowsRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [s.guesses.length, s.failed]);
 
   useImperativeHandle(ref, () => ({
     undo: b.undo,
@@ -57,7 +64,7 @@ export default forwardRef(function MindBoard({ puzzle, saved, onChange, onSolved
   const rows = [...s.guesses];
   return (
     <div className="mind">
-      <div className="mind-rows">
+      <div className={`mind-rows${attempts > 8 ? ' dense' : ''}`} ref={rowsRef}>
         {rows.map((g, k) => {
           const { exact, near } = score(code, g);
           return (
@@ -66,7 +73,11 @@ export default forwardRef(function MindBoard({ puzzle, saved, onChange, onSolved
               {g.map((c, i) => (
                 <Peg key={i} c={c} label={`intento ${k + 1}`} />
               ))}
-              <span className="mind-fb" aria-label={`${exact} exactas, ${near} mal ubicadas`}>
+              <span
+                className="mind-fb"
+                style={{ gridTemplateColumns: `repeat(${Math.ceil(length / 2)}, 10px)` }}
+                aria-label={`${exact} exactas, ${near} mal ubicadas`}
+              >
                 {Array.from({ length }, (_, i) => (
                   <i key={i} className={i < exact ? 'exact' : i < exact + near ? 'near' : ''} />
                 ))}
@@ -88,7 +99,9 @@ export default forwardRef(function MindBoard({ puzzle, saved, onChange, onSolved
               {s.current.map((c, i) => (
                 <Peg key={i} c={c} onClick={() => take(i)} label={`casilla ${i + 1}`} />
               ))}
-              <span className="mind-left">{attempts - rows.length} restantes</span>
+              <span className="mind-left">
+                {attempts - rows.length} {attempts - rows.length === 1 ? "restante" : "restantes"}
+              </span>
             </div>
           )
         )}

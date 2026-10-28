@@ -112,8 +112,18 @@
 .paint.sel { transform: translateY(-5px); box-shadow: 0 8px 0 var(--shadow); outline: 3px solid var(--text); outline-offset: 2px; }
 
 /* Code */
-.mind { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
-.mind-rows { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 380px; }
+/* The attempts list scrolls on its own so the palette and toolbar always stay on screen. */
+.mind { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; flex: 1 1 auto; min-height: 0; }
+.mind-rows {
+  display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 380px;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  padding: 2px 2px 6px; scrollbar-width: thin;
+}
+.mind-rows > :first-child { margin-top: auto; }
+.mind-rows.dense { gap: 4px; }
+.mind-rows.dense .mind-row { padding: 4px 10px; }
+.mind-rows.dense .peg { width: 30px; height: 30px; }
+.mind-row { flex: none; }
 .mind-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 12px; background: var(--surface); border: 1.5px solid var(--soft-stroke); }
 .mind-row.current { border: 2px solid var(--stroke); box-shadow: 0 3px 0 var(--shadow); }
 .mind-row.reveal { background: var(--cbg); }
@@ -121,12 +131,14 @@
 .peg { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #303030; padding: 0; flex: none; }
 .peg.empty { background: #c9c9c9; border-style: dashed; }
 :root[data-theme='dark'] .peg.empty { background: #484f58; }
-.mind-fb { margin-left: auto; display: grid; grid-template-columns: repeat(3, 10px); gap: 3px; }
+.mind-fb { margin-left: auto; display: grid; grid-template-columns: repeat(2, 10px); gap: 3px; }
 .mind-fb i { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--text-2); }
 .mind-fb i.exact { background: var(--text); border-color: var(--text); }
 .mind-fb i.near { background: var(--bg); border-color: var(--text); }
 .mind-left { margin-left: auto; font-size: 11px; color: var(--text-2); }
+.mind .palette { flex: none; }
 .mind .palette .peg { width: 42px; height: 42px; box-shadow: 0 3px 0 var(--shadow); }
+.mind > .btn, .mind > .message { flex: none; }
 
 /* Trios */
 .sets { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }

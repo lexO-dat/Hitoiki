@@ -154,7 +154,13 @@ h3.section { font-family: var(--serif); font-weight: 600; font-size: 18px; margi
 .game-meta .mode { padding: 1px 8px; border-radius: 6px; border: 1.5px solid var(--stroke); color: var(--text); }
 .game-meta .mode.hard { background: var(--hard); color: #303030; }
 .game-meta .mode.expert { background: var(--expert); color: #303030; }
-.board-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 8px 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+/* Game screens are exactly one viewport tall: the board area flexes, the toolbar stays visible. */
+.screen.game { flex: none; height: 100vh; height: 100dvh; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.board-wrap {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: safe center;
+  gap: 14px; padding: 8px 0; user-select: none; -webkit-user-select: none; overflow-y: auto; touch-action: pan-y;
+}
+.board-wrap.celebrate { overflow: visible; }
 .toolbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
 .toolbar .btn { padding: 10px 6px; font-size: 13px; flex-direction: column; gap: 2px; }
 .toolbar .btn svg { width: 22px; height: 22px; }

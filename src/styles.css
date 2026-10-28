@@ -145,7 +145,6 @@ h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; letter-spacing: 0.
 .hero .cta { grid-column: 1 / -1; margin-top: 12px; position: relative; z-index: 1; }
 .hero .enso b { font-family: var(--serif); font-size: 34px; line-height: 1; }
 .hero .enso small { font-size: 11px; color: var(--ink-2); }
-.cta-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c, var(--shu)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c, var(--shu)) 30%, transparent); }
 
 /* Ensō */
 .enso { position: relative; display: inline-grid; place-items: center; flex: none; }

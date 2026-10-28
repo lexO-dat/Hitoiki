@@ -95,8 +95,7 @@ export default function Home({ date, today, mode, setDate, setMode, navigate }) 
           <p className="hero-sub">{sub}</p>
         </div>
         {next ? (
-          <button className="btn primary wide cta" onClick={() => open(next)} style={{ '--c': GAME_BY_ID[next].main }}>
-            <span className="cta-dot" aria-hidden="true" />
+          <button className="btn primary wide cta" onClick={() => open(next)}>
             {started(next) ? 'Seguir con' : done ? 'Siguiente:' : 'Empezar con'} {GAME_BY_ID[next].name}
             <Arrow width="18" height="18" />
           </button>

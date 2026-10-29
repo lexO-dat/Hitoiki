@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: Auto Backup uploads ONLY the player's progress (the Preferences file the app
+     mirrors it into), so it comes back after reinstalling. Nothing else: update bundles and caches stay out. -->
+<full-backup-content>
+    <include domain="sharedpref" path="CapacitorStorage.xml" />
+</full-backup-content>

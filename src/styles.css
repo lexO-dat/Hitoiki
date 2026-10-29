@@ -317,6 +317,15 @@ h3.section { font-size: 17px; margin: 20px 2px 10px; display: flex; align-items:
 @keyframes fade { from { opacity: 0; } }
 @keyframes rise { from { transform: translateY(60px); opacity: 0; } }
 
+/* A board being prepared in the background */
+.puzzle-loading .loading-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; opacity: 0; animation: fadein 0.4s ease 0.18s forwards; }
+.puzzle-loading p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.loading-ring { position: relative; width: 96px; height: 96px; display: grid; place-items: center; }
+.loading-ring svg { position: absolute; inset: 0; animation: spin 1.6s linear infinite; }
+.loading-ring circle { fill: none; stroke: var(--c); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 90 190; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadein { to { opacity: 1; } }
+
 /* Interactive tutorial */
 .tutorial-overlay { place-items: stretch; }
 .tutorial {
@@ -518,6 +527,10 @@ h3.section small { font-family: var(--sans); font-weight: 400; }
   /* Smooth glide with no overshoot: it always lands exactly under the icon. */
   transform: translateX(calc(var(--i) * (100% + 4px))); transition: transform 0.36s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
+
+/* Short message that fades in at the top (progress recovered) */
+.toast { position: fixed; z-index: 800; top: calc(12px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); max-width: calc(100% - 32px); border: 0; border-radius: 999px; padding: 10px 18px; background: var(--ink); color: var(--paper); font-size: 13px; font-weight: 700; box-shadow: var(--lift); animation: toast-in 0.4s var(--spring); }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, -14px); } }
 
 /* Shown when the device refuses to store the progress */
 .save-warning { position: fixed; top: 0; left: 0; right: 0; z-index: 900; padding: calc(8px + env(safe-area-inset-top)) 16px 8px; background: var(--wrong); color: #fff; font-size: 13px; font-weight: 700; text-align: center; }

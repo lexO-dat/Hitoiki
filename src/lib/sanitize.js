@@ -9,6 +9,10 @@ export const MODES = ['standard', 'hard', 'expert'];
 const DIFFICULTIES = ['easy', 'medium', 'hard', 'expert'];
 const THEMES = ['system', 'light', 'dark'];
 
+// Bumped when the validation rules change: data written by this app under the current rules is
+// trusted on start (with a cheap check) instead of being validated entry by entry every launch.
+export const CLEAN = 1;
+
 export const LIMITS = {
   results: 250_000, // far above the ~45k bundled levels plus infinite and daily history
   saves: 400,
@@ -64,11 +68,12 @@ export function sanitizeSettings(raw, defaults) {
   return out;
 }
 
-function sanitizeSaves(raw) {
+export function sanitizeSaves(raw) {
   const out = {};
   if (!isObj(raw)) return out;
+  let kept = 0;
   for (const [k, v] of Object.entries(raw)) {
-    if (Object.keys(out).length >= LIMITS.saves) break;
+    if (kept >= LIMITS.saves) break;
     if (!parseKey(k) || !isObj(v) || !('state' in v) || v.state === null || typeof v.state !== 'object') continue;
     let size = 0;
     try {
@@ -79,8 +84,30 @@ function sanitizeSaves(raw) {
     if (size > LIMITS.saveBytes) continue;
     const meta = isObj(v.meta) ? v.meta : {};
     out[k] = { state: v.state, meta: { time: int(meta.time, 0, LIMITS.maxTime, 0), hints: int(meta.hints, 0, LIMITS.maxCount, 0), mistakes: int(meta.mistakes, 0, LIMITS.maxCount, 0) } };
+    kept++;
   }
   return out;
+}
+
+// Fast path for data this app wrote itself under the current rules. Returns null if it can't be trusted
+// (older version, another schema, anything unexpected): the caller then validates entry by entry.
+export function trustedState(data, defaults) {
+  if (!isObj(data) || data.clean !== CLEAN || data.schema !== defaults.schema || !isObj(data.results) || !isObj(data.tutorialsSeen)) return null;
+  for (const k in data.results) {
+    const r = data.results[k];
+    if (!isObj(r) || !finite(r.time) || typeof r.solvedDay !== 'string') return null;
+  }
+  const state = {
+    schema: defaults.schema,
+    settings: sanitizeSettings(data.settings, defaults.settings),
+    results: data.results,
+    saves: sanitizeSaves(data.saves),
+    tutorialsSeen: data.tutorialsSeen,
+    updatedAt: finite(data.updatedAt) ? data.updatedAt : 0,
+  };
+  if (Array.isArray(data.achievementsSeen)) state.achievementsSeen = data.achievementsSeen;
+  if (isObj(data.levelsUi)) state.levelsUi = data.levelsUi;
+  return state;
 }
 
 // The whole state. Returns the clean state plus how many entries were dropped or repaired.
@@ -90,8 +117,9 @@ export function sanitizeState(raw, defaults, now = Date.now()) {
   let repaired = 0;
   const results = {};
   if (isObj(data.results)) {
+    let kept = 0; // a counter: counting the keys of `results` on every entry would be quadratic
     for (const [k, v] of Object.entries(data.results)) {
-      if (Object.keys(results).length >= LIMITS.results) {
+      if (kept >= LIMITS.results) {
         dropped++;
         continue;
       }
@@ -100,8 +128,11 @@ export function sanitizeState(raw, defaults, now = Date.now()) {
         dropped++;
         continue;
       }
-      if (JSON.stringify(clean) !== JSON.stringify(v)) repaired++;
+      // Repaired = something changed (a missing solvedDay, a value out of range). Field by field: two
+      // JSON.stringify calls per result would dominate startup for players with tens of thousands.
+      if (clean.time !== v.time || clean.hints !== v.hints || clean.mistakes !== v.mistakes || clean.solvedAt !== v.solvedAt || clean.solvedDay !== v.solvedDay) repaired++;
       results[k] = clean;
+      kept++;
     }
   }
   const tutorialsSeen = {};

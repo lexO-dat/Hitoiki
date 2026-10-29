@@ -3,9 +3,14 @@
 import { GAME_IDS } from '../data/ids.js';
 import { addDays, toKey, weekDays } from './dates.js';
 import { completedOn, gameOfKey, STREAK_REQUIRED } from './storage.js';
+import { indexOf, memo } from './indexes.js';
 
 // Solves that beat the player's previous best time for that game (no hints; the first ever doesn't count).
 function recordTimes(s) {
+  return memo(s.results, 'records', () => recordTimesNow(s));
+}
+
+function recordTimesNow(s) {
   const best = {};
   const out = [];
   const list = Object.entries(s.results)
@@ -23,7 +28,8 @@ function recordTimes(s) {
 export function weekSummary(s, anyDayOfWeek) {
   const days = weekDays(anyDayOfWeek);
   // By the day each puzzle was solved on (fixed when it was solved), so a timezone change can't move it.
-  const inWeek = Object.entries(s.results).filter(([, v]) => days.includes(v.solvedDay ?? toKey(new Date(v.solvedAt))));
+  const ix = indexOf(s.results);
+  const inWeek = days.flatMap((d) => (ix.byDay.get(d) ?? []).map((k) => [k, s.results[k]]));
   const perGame = {};
   for (const [k] of inWeek) perGame[gameOfKey(k)] = (perGame[gameOfKey(k)] ?? 0) + 1;
   const favorite = GAME_IDS.filter((g) => perGame[g]).sort((a, b) => perGame[b] - perGame[a])[0] ?? null;

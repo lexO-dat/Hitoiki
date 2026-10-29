@@ -8,6 +8,7 @@ const version = process.env.APP_VERSION ?? `${pkg.version}-dev`;
 
 export default defineConfig({
   base: './',
+  worker: { format: 'es' }, // the puzzle generator runs in a module worker
   define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [
     react(),

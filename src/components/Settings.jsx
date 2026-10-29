@@ -7,7 +7,7 @@ import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
 import { exportBackup, importBackup, wipeBackups } from '../lib/backup.js';
 import { Capacitor } from '@capacitor/core';
 
-const setSetting = (k, v) => store.update((s) => ({ ...s, settings: { ...s.settings, [k]: v } }));
+const setSetting = (k, v) => store.patch((s) => ({ settings: { ...s.settings, [k]: v } }));
 
 // Defined at module level: a component declared inside another one is a new type on every render,
 // so React would rebuild the button each time (losing focus and the sliding animation).
@@ -27,7 +27,7 @@ export default function Settings({ navigate }) {
   };
   const reset = () => {
     if (confirm('¿Borrar todo el progreso, rachas y resultados?')) {
-      store.update((s) => ({ ...s, results: {}, saves: {}, tutorialsSeen: {} }));
+      store.patch(() => ({ results: {}, saves: {}, tutorialsSeen: {} }));
       wipeBackups().catch(() => {});
     }
   };
@@ -91,7 +91,7 @@ export default function Settings({ navigate }) {
         )}
         <div className="row">
           Volver a ver las reglas
-          <button className="btn" onClick={() => store.update((s) => ({ ...s, tutorialsSeen: {} }))}>
+          <button className="btn" onClick={() => store.patch(() => ({ tutorialsSeen: {} }))}>
             Restablecer
           </button>
         </div>
@@ -123,10 +123,13 @@ export default function Settings({ navigate }) {
             Copia de seguridad
             <br />
             <small className="muted">
-              {Capacitor.isNativePlatform() ? 'Automática en Documentos/Hitoiki. También puedes exportarla.' : 'Descarga un archivo con todo tu progreso.'}
+              {Capacitor.isNativePlatform()
+                ? 'Android guarda tu progreso en tu cuenta de Google (si tienes las copias activadas). También puedes guardar un archivo.'
+                : 'Descarga un archivo con todo tu progreso: este navegador puede borrar sus datos.'}
+              {settings.lastExport ? ` Última copia: ${new Date(settings.lastExport).toLocaleDateString('es')}.` : ''}
             </small>
           </span>
-          <button className="btn" onClick={() => exportBackup().then((f) => setNotice(`Copia guardada: ${f}`), (e) => setNotice(`No se pudo exportar: ${e.message}`))}>
+          <button className="btn" onClick={() => exportBackup().then((f) => f && setNotice(Capacitor.isNativePlatform() ? 'Copia lista: elige dónde guardarla.' : `Copia descargada: ${f}`), (e) => setNotice(`No se pudo exportar: ${e.message}`))}>
             Exportar
           </button>
         </div>

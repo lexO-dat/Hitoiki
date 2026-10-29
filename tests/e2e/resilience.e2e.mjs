@@ -69,7 +69,7 @@ test('a damaged in-progress board heals itself: the save is discarded and the bo
     await p.waitForSelector('.board-wrap', { timeout: 4000 });
     assert.equal(await p.$('[role="alert"]'), null, `${g} shows the crash screen`);
   }
-  const left = await p.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('logica-diaria:v1')).saves));
+  const left = await p.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('logica-diaria:v1:saves') ?? '{"saves":{}}').saves));
   assert.deepEqual(left, [], 'damaged saves are removed');
   await p.context().close();
 });

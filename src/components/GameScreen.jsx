@@ -212,7 +212,7 @@ export default function GameScreen({ game, puzzle, storageKey, mode, modeLabel, 
 
   const closeRules = () => {
     setHelp(null);
-    store.update((s) => ({ ...s, tutorialsSeen: { ...s.tutorialsSeen, [game.id]: true } }));
+    store.patch((s) => ({ tutorialsSeen: { ...s.tutorialsSeen, [game.id]: true } }));
   };
 
   // Persist in-progress boards at most a few times per second (drags change state on every cell).

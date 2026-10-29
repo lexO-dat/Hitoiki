@@ -1,18 +1,23 @@
 import { useSyncExternalStore } from 'react';
-import { addDays, todayKey, toKey } from './dates.js';
-import { sanitizeState } from './sanitize.js';
+import { addDays, todayKey } from './dates.js';
+import { CLEAN, sanitizeState, trustedState } from './sanitize.js';
+import { countsForDay as countsForDayIn, indexOf, memo } from './indexes.js';
 
-// Storage key and schema. NEVER rename the key: updates must always find previous data.
+// Storage keys and schema. NEVER rename the key: updates must always find previous data.
 // Format changes go through SCHEMA + migrate(), so old saves are upgraded instead of discarded.
+//  - KEY holds the progress (settings, results, tutorials, seals): rewritten only when one of those changes.
+//  - KEY:saves holds the boards in progress, small and rewritten on every move: playing never
+//    re-serializes the (possibly huge) history of results.
 export const KEY = 'logica-diaria:v1';
+export const SAVES_KEY = `${KEY}:saves`;
 export const SCHEMA = 2;
 export const STREAK_REQUIRED = 4; // puzzles per day that keep the streak alive
 
 const defaults = {
   schema: SCHEMA,
   settings: { theme: 'system', showTimer: true, haptics: true, sound: true, music: true, volume: 0.7, notify: true },
-  results: {}, // `${date}|${mode}|${game}` -> { time, hints, mistakes, solvedAt }
-  saves: {}, // in-progress board state, same key
+  results: {}, // see resultKey(): -> { time, hints, mistakes, solvedAt, solvedDay }
+  saves: {}, // in-progress board state, same keys
   tutorialsSeen: {},
   updatedAt: 0,
 };
@@ -30,7 +35,7 @@ export function migrateReport(raw) {
   return sanitizeState(data, defaults);
 }
 
-export const isEmpty = (s) => !Object.keys(s.results).length && !Object.keys(s.saves).length;
+export const isEmpty = (s) => indexOf(s.results).total === 0 && Object.keys(s.saves).length === 0;
 
 // Unreadable saved data is not overwritten and lost: it is set aside under another key (once), so it
 // can still be recovered, and the app starts clean (the native mirror restores it in the background).
@@ -42,31 +47,67 @@ function quarantine(raw) {
   }
 }
 
+// The part of the state that is stored under KEY (everything but the boards in progress).
+const PROGRESS = ['settings', 'results', 'tutorialsSeen', 'levelsUi', 'achievementsSeen'];
+const progressOf = (s) => ({ clean: CLEAN, schema: s.schema, ...Object.fromEntries(PROGRESS.map((k) => [k, s[k]])), updatedAt: s.updatedAt });
+
+// What was last written, by identity: only the branches that changed are serialized again.
+let written = {};
+// Set when the browser refused a write (storage full or blocked): the app shows a warning.
+let saveFailed = false;
+export const saveStatus = { failed: () => saveFailed };
+
+function persist(s) {
+  try {
+    if (PROGRESS.some((k) => s[k] !== written[k])) {
+      localStorage.setItem(KEY, JSON.stringify(progressOf(s)));
+      PROGRESS.forEach((k) => (written[k] = s[k]));
+    }
+    if (s.saves !== written.saves) {
+      localStorage.setItem(SAVES_KEY, JSON.stringify({ saves: s.saves }));
+      written.saves = s.saves;
+    }
+    saveFailed = false;
+  } catch {
+    // storage full or blocked: keep in memory (the native mirror still gets it) and warn the player
+    saveFailed = true;
+  }
+}
+
 function read() {
   let raw = null;
   try {
     raw = localStorage.getItem(KEY);
     if (!raw) return structuredClone(defaults);
-    const { state: clean, dropped, repaired } = migrateReport(JSON.parse(raw));
-    // Old results get their fixed day, damaged entries are removed: persist the repaired copy once.
-    if (dropped || repaired) {
-      quarantine(raw);
-      try {
-        localStorage.setItem(KEY, JSON.stringify(clean));
-      } catch {
-        // keep it in memory
-      }
+    const parsed = JSON.parse(raw);
+    let boards;
+    try {
+      boards = JSON.parse(localStorage.getItem(SAVES_KEY) ?? 'null')?.saves;
+    } catch {
+      boards = undefined; // damaged boards only cost the boards, never the progress
     }
-    return clean;
+    // Older versions kept the boards inside KEY: they are moved to their own key on this first read.
+    const data = { ...parsed, saves: boards ?? parsed.saves ?? {} };
+    let state = trustedState(data, defaults);
+    let rewrite = false;
+    if (!state) {
+      const rep = migrateReport(data);
+      state = rep.state;
+      if (rep.dropped || rep.repaired) quarantine(raw);
+      rewrite = true;
+    }
+    if (parsed.saves !== undefined || boards === undefined) rewrite = true;
+    if (rewrite) persist(state);
+    else {
+      PROGRESS.forEach((k) => (written[k] = state[k]));
+      written.saves = state.saves;
+    }
+    return state;
   } catch {
     quarantine(raw);
     return structuredClone(defaults);
   }
 }
-
-// Set when the browser refused a write (storage full or blocked): the app shows a warning.
-let saveFailed = false;
-export const saveStatus = { failed: () => saveFailed };
 
 let state = read();
 const listeners = new Set();
@@ -74,13 +115,7 @@ const writeHooks = new Set();
 
 function write(next, { touch = true } = {}) {
   state = touch ? { ...next, updatedAt: Date.now() } : next;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-    saveFailed = false;
-  } catch {
-    // storage full or blocked: keep in memory (the native mirror still gets it) and warn the player
-    saveFailed = true;
-  }
+  persist(state);
   listeners.forEach((l) => l());
   writeHooks.forEach((h) => h(state));
 }
@@ -91,8 +126,15 @@ export const store = {
     listeners.add(l);
     return () => listeners.delete(l);
   },
+  // Change some branches: `fn(state)` returns only the new branches (e.g. `{ settings: {...} }`).
+  // Branches it doesn't return keep their identity, so nothing that depends on them is recomputed
+  // or stored again. Branches must be replaced, never edited in place.
+  patch(fn) {
+    write({ ...state, ...fn(state) });
+  },
+  // Same, with a draft whose branches are copies that may be edited freely (O(results): for rare uses).
   update(fn) {
-    write(fn(structuredClone(state)));
+    write(fn({ ...state, settings: { ...state.settings }, results: { ...state.results }, saves: { ...state.saves }, tutorialsSeen: { ...state.tutorialsSeen } }));
   },
   // Replace everything (restore/import). Data is migrated first.
   replace(data) {
@@ -114,40 +156,36 @@ export const resultKey = (date, mode, game) => `${date}|${mode}|${game}`;
 
 // Replaying a solved puzzle keeps the better result (a slower replay never loses the record or the day's seal).
 export function saveResult(k, result) {
-  store.update((s) => {
+  store.patch((s) => {
+    const saves = { ...s.saves };
+    delete saves[k];
     const prev = s.results[k];
-    s.results[k] = prev && prev.time <= result.time ? prev : { ...result, solvedAt: Date.now(), solvedDay: todayKey() };
-    delete s.saves[k];
-    return s;
+    if (prev && prev.time <= result.time) return { saves };
+    return { results: { ...s.results, [k]: { ...result, solvedAt: Date.now(), solvedDay: todayKey() } }, saves };
   });
 }
 
 export function saveProgress(k, data) {
-  store.update((s) => {
-    s.saves[k] = data;
-    return s;
-  });
+  store.patch((s) => ({ saves: { ...s.saves, [k]: data } }));
 }
 
 // Start a board again from scratch. Results are kept: they only improve through saveResult.
 export function clearProgress(k) {
-  store.update((s) => {
-    delete s.saves[k];
-    return s;
+  store.patch((s) => {
+    if (!(k in s.saves)) return {};
+    const saves = { ...s.saves };
+    delete saves[k];
+    return { saves };
   });
 }
 
 // A daily puzzle only counts for its day when it was solved on that same day: daily puzzles cannot be
 // played afterwards, and anything solved late (before that rule existed) never adds to the streak.
-export function countsForDay(key, result) {
-  // `solvedDay` is the local date at the moment of solving; it doesn't move if the timezone changes.
-  if (!result) return false;
-  const day = result.solvedDay ?? (result.solvedAt ? toKey(new Date(result.solvedAt)) : null);
-  return day === key.split('|')[0];
-}
+// `solvedDay` is the local date at the moment of solving; it doesn't move if the timezone changes.
+export const countsForDay = countsForDayIn;
 
 export function completedOn(s, date) {
-  return Object.entries(s.results).filter(([k, r]) => k.startsWith(date + '|') && countsForDay(k, r)).length;
+  return indexOf(s.results).daily.get(date) ?? 0;
 }
 
 export const REST_EVERY = 7; // streak days that earn one rest day
@@ -158,11 +196,12 @@ export const MAX_RESTS = 2;
 // one instead of breaking the streak, so one bad day does not erase weeks of habit.
 // Returns { streak, best, rests (available now), restDays (Set of covered dates) }.
 export function computeStreak(s, today = todayKey()) {
-  const done = (d) => completedOn(s, d) >= STREAK_REQUIRED;
-  const days = Object.keys(s.results)
-    .map((k) => k.split('|')[0])
-    .filter((d) => /^\d{4}-\d\d-\d\d$/.test(d) && d <= today && done(d))
-    .sort();
+  return memo(s.results, 'streak', () => streakOf(indexOf(s.results).daily, today), today);
+}
+
+function streakOf(daily, today) {
+  const done = (d) => (daily.get(d) ?? 0) >= STREAK_REQUIRED;
+  const days = [...daily.keys()].filter((d) => /^\d{4}-\d\d-\d\d$/.test(d) && d <= today && done(d)).sort();
   let streak = 0;
   let best = 0;
   let rests = 0;

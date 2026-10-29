@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { GAMES } from '../data/games.js';
 import { formatTime, toKey, todayKey } from '../lib/dates.js';
-import { completedOn, computeStreak, gameOfKey, MAX_RESTS, REST_EVERY, STREAK_REQUIRED, useStore } from '../lib/storage.js';
+import { completedOn, computeStreak, MAX_RESTS, REST_EVERY, STREAK_REQUIRED, useStore } from '../lib/storage.js';
+import { indexOf } from '../lib/indexes.js';
 import { Back, Flame, Gear, Leaf } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
 import Seal from './Seal.jsx';
@@ -99,16 +100,11 @@ function Achievements({ s }) {
 export default function Stats({ navigate }) {
   const s = useStore();
   const { streak, best, rests, restDays } = computeStreak(s);
-  const entries = Object.entries(s.results).map(([k, v]) => ({ game: gameOfKey(k), ...v }));
-  const perfect = entries.filter((e) => !e.hints && !e.mistakes).length;
+  const ix = indexOf(s.results);
+  const perfect = ix.perfect;
   const perGame = GAMES.map((g) => {
-    const list = entries.filter((e) => e.game === g.id);
-    return {
-      g,
-      count: list.length,
-      best: list.length ? Math.min(...list.map((e) => e.time)) : null,
-      avg: list.length ? list.reduce((a, e) => a + e.time, 0) / list.length : null,
-    };
+    const d = ix.perGame.get(g.id);
+    return { g, count: d?.count ?? 0, best: d ? d.best : null, avg: d ? d.sum / d.count : null };
   }).sort((a, b) => b.count - a.count);
   const toRest = REST_EVERY - (streak % REST_EVERY);
   return (
@@ -134,7 +130,7 @@ export default function Stats({ navigate }) {
             <b className="num">{best}</b> mejor racha
           </p>
           <p>
-            <b className="num">{entries.length}</b> puzzles resueltos
+            <b className="num">{ix.total}</b> puzzles resueltos
           </p>
           <p>
             <b className="num">{perfect}</b> perfectos ✦

@@ -3,6 +3,7 @@ import { GAMES, GAME_BY_ID } from '../data/games.js';
 import { COLLECTION_LABEL, DIFFICULTY_LABEL, loadIndex, loadLevels } from '../lib/levels.js';
 import { store, useStore } from '../lib/storage.js';
 import { levelKey, progression } from '../lib/progress.js';
+import { indexOf } from '../lib/indexes.js';
 import Seal from './Seal.jsx';
 import { Arrow, Back, Gear, Lock } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
@@ -24,7 +25,7 @@ export function ClassicHome({ navigate }) {
   useEffect(() => {
     loadIndex().then(setIndex, () => setError(true));
   }, []);
-  const solvedCount = (id) => Object.keys(results).filter((k) => k.startsWith(`lvl|${id}|`)).length;
+  const solvedCount = (id) => indexOf(results).lvl.get(id) ?? 0;
   return (
     <div className="screen with-nav">
       <header className="topbar">
@@ -93,7 +94,7 @@ export function ClassicHome({ navigate }) {
 const PAGE = 120;
 
 // Remembered per game: the difficulty last browsed, and the last level opened (for "Continuar").
-export const rememberLevel = (patch) => store.update((s) => ({ ...s, levelsUi: { ...(s.levelsUi ?? {}), ...patch(s.levelsUi ?? {}) } }));
+export const rememberLevel = (change) => store.patch((s) => ({ levelsUi: { ...(s.levelsUi ?? {}), ...change(s.levelsUi ?? {}) } }));
 
 export function ClassicList({ gameId, navigate }) {
   const game = GAME_BY_ID[gameId];

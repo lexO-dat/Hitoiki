@@ -1,5 +1,7 @@
 import { GAME_BY_ID, MODES } from '../data/games.js';
+import { useEffect } from 'react';
 import { dailySelection, nextDaily, SELECTION_SIZE } from '../lib/daily.js';
+import { dailySeed, prefetch } from '../lib/puzzles.js';
 import { addDays, dayNum, diffDays, formatTime, longDate, weekDays, weekdayLong, weekdayShort } from '../lib/dates.js';
 import { completedOn, computeStreak, resultKey, STREAK_REQUIRED, useStore } from '../lib/storage.js';
 import { Arrow, Back, Flame, Gear, Leaf } from './Icons.jsx';
@@ -37,6 +39,14 @@ export default function Home({ date, today, mode, setDate, setMode, navigate }) 
   const [title, sub] = headline({ done, streak, rests, past });
 
   const open = (id) => !past && navigate(`/play/${date}/${mode}/${id}`);
+
+  // While the player looks at the day, the featured boards (the next one first) are prepared.
+  const preparing = past ? '' : [next, ...featured.slice(0, SELECTION_SIZE)].filter(Boolean).join();
+  useEffect(() => {
+    if (!preparing) return undefined;
+    const t = setTimeout(() => [...new Set(preparing.split(','))].forEach((id) => prefetch(dailySeed(date, mode, id), id, mode)), 350);
+    return () => clearTimeout(t);
+  }, [preparing, date, mode]);
   const state = (id) => {
     const r = result(id);
     if (r)

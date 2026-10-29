@@ -93,11 +93,30 @@ deshacer.
   tablero guardado que falla se reinicia solo, y si el guardado completo es ilegible se aparta en lugar
   de borrarse. Si el dispositivo no deja guardar, la app avisa.
 - **La racha no depende de la zona horaria**: cada resultado guarda el día local en que se resolvió.
-- **Tu progreso nunca se pierde al actualizar**:
-  - el formato de guardado está versionado y cada versión migra los datos antiguos;
-  - en Android se guarda además una copia nativa y un respaldo automático en `Documentos/Hitoiki/`
-    que sobrevive a desinstalar la app;
-  - Ajustes → Tus datos permite exportar e importar el progreso (al importar se combina, no se borra).
+- **Tu progreso nunca se pierde**, en capas:
+  1. el guardado de la app (el formato está versionado y cada versión migra los datos antiguos);
+  2. en Android, un espejo nativo con dos ranuras (el último y el del día anterior) que se une con tu
+     progreso al abrir la app: sólo suma, nunca reemplaza. Si el almacenamiento de la app queda vacío
+     se recupera solo y la app lo avisa;
+  3. la **copia automática de Android** sube ese espejo a tu cuenta de Google (si tienes las copias de
+     seguridad activadas), así vuelve al reinstalar o cambiar de teléfono. Sólo se respalda el progreso:
+     ni paquetes de actualización ni cachés (`res/xml/backup_rules.xml`);
+  4. Ajustes → Tus datos: exportar un archivo con el menú de compartir (Drive, Archivos, correo) e
+     importarlo; al importar se combina, no se borra. En la web, además, se pide al navegador que no
+     borre los datos de la página.
+- **Guardado por partes**: el progreso y los tableros en curso viven en claves separadas, así jugar
+  nunca reescribe el historial, y las pantallas leen de índices que se recalculan sólo al resolver.
+  Un jugador con los 44.834 niveles resueltos abre la app en menos de un segundo.
+
+## Rendimiento
+
+- Los tableros generados (diario e infinito) se preparan en un **Web Worker**: un tablero difícil puede
+  tardar segundos en un teléfono y antes congelaba la app. Hay un worker para lo que acabas de pedir y
+  otro que prepara lo que viene (los destacados del día, el siguiente nivel infinito, el siguiente puzzle
+  del día), así que casi siempre el tablero ya está listo al tocarlo. Si el dispositivo no soporta
+  Workers se genera en el hilo principal, tras mostrar la pantalla de carga.
+- Los resultados se indexan una sola vez por versión (por día, por juego y por dificultad) para que
+  ninguna pantalla recorra todo el historial.
 
 ## Seguridad
 

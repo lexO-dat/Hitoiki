@@ -3,6 +3,7 @@
 // player has already been shown (`achievementsSeen`).
 import { GAME_IDS } from '../data/ids.js';
 import { completedOn, computeStreak, countsForDay, STREAK_REQUIRED, store } from './storage.js';
+import { memo } from './indexes.js';
 
 export function parseKey(k) {
   const p = k.split('|');
@@ -12,6 +13,10 @@ export function parseKey(k) {
 }
 
 export function summarize(s) {
+  return memo(s.results, 'summary', () => summarizeNow(s));
+}
+
+function summarizeNow(s) {
   const entries = Object.entries(s.results).map(([k, v]) => ({ key: k, ...parseKey(k), ...v }));
   const perGame = {};
   for (const e of entries) perGame[e.game] = (perGame[e.game] ?? 0) + 1;
@@ -75,7 +80,7 @@ export function newAchievements(s = store.get()) {
 }
 
 export function markAchievementsSeen(ids) {
-  store.update((s) => ({ ...s, achievementsSeen: [...new Set([...(s.achievementsSeen ?? []), ...ids])] }));
+  store.patch((s) => ({ achievementsSeen: [...new Set([...(s.achievementsSeen ?? []), ...ids])] }));
 }
 
 // First start of a version with achievements: what was already earned is not announced as new.

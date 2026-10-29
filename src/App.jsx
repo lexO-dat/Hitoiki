@@ -7,15 +7,18 @@ import InfiniteHome from './components/InfiniteHome.jsx';
 import { ClassicHome, ClassicList, rememberLevel } from './components/Classic.jsx';
 import { progression } from './lib/progress.js';
 import { GAME_BY_ID, MODES } from './data/games.js';
-import { getPuzzle, nextDaily } from './lib/daily.js';
+import { nextDaily } from './lib/daily.js';
+import { dailySeed, infiniteSeed, prefetch, usePuzzle } from './lib/puzzles.js';
+import { PuzzleError, PuzzleLoading } from './components/PuzzleLoading.jsx';
 import { formatTime, longDate } from './lib/dates.js';
 import { useToday } from './lib/useToday.js';
-import { DIFFICULTY_LABEL, infinitePuzzle, loadLevels, toPuzzle } from './lib/levels.js';
+import { DIFFICULTY_LABEL, loadLevels, toPuzzle } from './lib/levels.js';
 import { resultKey, saveStatus, store, useStore } from './lib/storage.js';
 import { useApplyTheme } from './lib/theme.js';
 import { sfx } from './lib/sound.js';
 import { askPermissionOnce, syncReminders } from './lib/notify.js';
 import { markAppReady } from './lib/updates.js';
+import { onRestore } from './lib/backup.js';
 import { initAchievements } from './lib/achievements.js';
 import { syncWidget } from './lib/widget.js';
 import { Capacitor } from '@capacitor/core';
@@ -43,9 +46,10 @@ function discardSaves(route) {
   if (!target) return false;
   const keys = Object.keys(store.get().saves).filter((k) => (target.exact ? k === target.exact : k.startsWith(target.prefix)));
   if (!keys.length) return false;
-  store.update((s) => {
-    keys.forEach((k) => delete s.saves[k]);
-    return s;
+  store.patch((s) => {
+    const saves = { ...s.saves };
+    keys.forEach((k) => delete saves[k]);
+    return { saves };
   });
   return true;
 }
@@ -60,6 +64,19 @@ function direction(from, to) {
 const modeLabel = (m) => MODES.find((x) => x.id === m)?.label ?? m;
 // Classic difficulties map onto the visual mode badges.
 const CLASSIC_MODE = { easy: 'standard', medium: 'standard', hard: 'hard', expert: 'expert' };
+
+// A generated board (daily / infinite): prepared in the background; `render` gets it when it's ready.
+// `ahead` = the boards the player will want next, prepared while this one is played.
+function PuzzleScreen({ seed, game, mode, onBack, render, ahead = [] }) {
+  const { puzzle, failed, retry } = usePuzzle(seed, game.id, mode);
+  const aheadKey = ahead.map((a) => a.seed).join();
+  useEffect(() => {
+    if (puzzle) ahead.forEach((a) => prefetch(a.seed, a.game, a.mode));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzle, aheadKey]);
+  if (puzzle) return render(puzzle);
+  return failed ? <PuzzleError game={game} onBack={onBack} onRetry={retry} /> : <PuzzleLoading game={game} onBack={onBack} />;
+}
 
 // A daily puzzle opened after its day (old link, or the app left open past midnight).
 function DailyClosed({ date, mode, game, onToday, navigate }) {
@@ -128,6 +145,14 @@ export default function App() {
   const [route, setRoute] = useState(parse);
   const [dir, setDir] = useState('none');
   const saveFailed = useStore(() => saveStatus.failed());
+  // Progress that came back on its own (new phone, reinstall, wiped storage) is announced once.
+  const [restored, setRestored] = useState(null);
+  useEffect(() => onRestore((r) => setRestored(r)), []);
+  useEffect(() => {
+    if (!restored) return;
+    const t = setTimeout(() => setRestored(null), 6000);
+    return () => clearTimeout(t);
+  }, [restored]);
 
   // Keep scheduled reminders in sync with settings, and refresh them whenever the app comes back.
   useEffect(() => {
@@ -278,33 +303,54 @@ export default function App() {
       d !== today ? (
         <DailyClosed date={d} mode={m} game={GAME_BY_ID[g]} onToday={toToday} navigate={navigate} />
       ) : (
-        <GameScreen
+        <PuzzleScreen
           key={args.join('|')}
+          seed={dailySeed(d, m, g)}
           game={GAME_BY_ID[g]}
-          puzzle={getPuzzle(d, m, g)}
-          storageKey={resultKey(d, m, g)}
           mode={m}
-          modeLabel={modeLabel(m)}
-          subtitle={longDate(d)}
           onBack={() => navigate('/')}
-          next={dailyNext(d, m, g)}
-          showStreak
+          ahead={(() => {
+            const nx = nextDaily(store.get(), d, m, g);
+            return nx ? [{ seed: dailySeed(d, m, nx), game: nx, mode: m }] : [];
+          })()}
+          render={(puzzle) => (
+            <GameScreen
+              game={GAME_BY_ID[g]}
+              puzzle={puzzle}
+              storageKey={resultKey(d, m, g)}
+              mode={m}
+              modeLabel={modeLabel(m)}
+              subtitle={longDate(d)}
+              onBack={() => navigate('/')}
+              next={dailyNext(d, m, g)}
+              showStreak
+            />
+          )}
         />
       );
   } else if (page === 'inf' && args.length === 3 && GAME_BY_ID[args[1]]) {
     const [m, g, nStr] = args;
     const n = Math.max(1, Number(nStr) || 1);
     content = (
-      <GameScreen
+      <PuzzleScreen
         key={args.join('|')}
+        seed={infiniteSeed(m, g, n)}
         game={GAME_BY_ID[g]}
-        puzzle={infinitePuzzle(g, m, n)}
-        storageKey={`inf|${m}|${g}|${n}`}
         mode={m}
-        modeLabel={modeLabel(m)}
-        subtitle={`Nivel ${n}`}
         onBack={() => navigate('/inf')}
-        next={{ label: `Nivel ${n + 1}`, onClick: () => navigate(`/inf/${m}/${g}/${n + 1}`) }}
+        ahead={[{ seed: infiniteSeed(m, g, n + 1), game: g, mode: m }]}
+        render={(puzzle) => (
+          <GameScreen
+            game={GAME_BY_ID[g]}
+            puzzle={puzzle}
+            storageKey={`inf|${m}|${g}|${n}`}
+            mode={m}
+            modeLabel={modeLabel(m)}
+            subtitle={`Nivel ${n}`}
+            onBack={() => navigate('/inf')}
+            next={{ label: `Nivel ${n + 1}`, onClick: () => navigate(`/inf/${m}/${g}/${n + 1}`) }}
+          />
+        )}
       />
     );
   } else if (page === 'inf') content = <InfiniteHome mode={mode} setMode={setMode} navigate={navigate} />;
@@ -317,6 +363,11 @@ export default function App() {
 
   return (
     <div className="app">
+      {restored && (
+        <button className="toast" role="status" onClick={() => setRestored(null)}>
+          {restored.results > 0 ? `Recuperamos tu progreso: ${restored.results} ${restored.results === 1 ? 'puzzle' : 'puzzles'}.` : 'Recuperamos tus ajustes.'}
+        </button>
+      )}
       {saveFailed && (
         <div className="save-warning" role="alert">
           No se pudo guardar tu progreso en este dispositivo. Libera espacio o exporta una copia en Ajustes.

@@ -56,7 +56,7 @@ export async function ensurePermission() {
 export async function askPermissionOnce() {
   const s = store.get();
   if (s.settings.notify === false || s.settings.notifyAsked) return;
-  store.update((x) => ({ ...x, settings: { ...x.settings, notifyAsked: true } }));
+  store.patch((x) => ({ settings: { ...x.settings, notifyAsked: true } }));
   if (isNative() || ('Notification' in window && Notification.permission === 'default')) await ensurePermission();
   await syncReminders();
 }

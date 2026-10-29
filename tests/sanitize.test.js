@@ -92,3 +92,15 @@ test('merging keeps the day credit when a faster time came from a late solve', (
   assert.equal(m.results[k].time, 40);
   assert.equal(m.results[k].solvedDay, '2026-10-27');
 });
+
+test('sanitizing scales linearly: 45,000 results load in well under a second', () => {
+  const games = ['zip', 'queens', 'tango', 'pipes'];
+  const results = {};
+  for (let i = 0; i < 45000; i++) results[`lvl|${games[i % 4]}|level_${i}`] = { time: 30 + (i % 100), hints: 0, mistakes: 0, solvedAt: NOW - i * 1000, solvedDay: '2026-10-28' };
+  const t = performance.now();
+  const { state, dropped, repaired } = migrateReport({ results });
+  const ms = performance.now() - t;
+  assert.equal(Object.keys(state.results).length, 45000);
+  assert.equal(dropped + repaired, 0, 'clean data is not touched');
+  assert.ok(ms < 800, `took ${Math.round(ms)} ms (was quadratic: several minutes)`);
+});

@@ -7,6 +7,7 @@ import { renderResultCard } from '../lib/shareCard.js';
 import Seal from './Seal.jsx';
 import Enso from './Enso.jsx';
 import { markAchievementsSeen, newAchievements } from '../lib/achievements.js';
+import { PALETTES } from '../data/palettes.js';
 import { todayKey } from '../lib/dates.js';
 import { vibrate } from '../lib/theme.js';
 import { sfx } from '../lib/sound.js';
@@ -137,6 +138,11 @@ function Result({ game, mode, subtitle, modeLabel, result, storageKey, onBack, o
               <small>Nuevo sello</small>
               <b>{a.name}</b>
               <span>{a.desc}</span>
+              {PALETTES.filter((p) => p.seal === a.id).map((p) => (
+                <span key={p.id} className="earned-palette">
+                  Paleta desbloqueada: <b>{p.name}</b> (en Ajustes)
+                </span>
+              ))}
             </div>
           </div>
         ))}

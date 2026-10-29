@@ -119,3 +119,30 @@ test('no visible scrollbars', async () => {
   assert.equal(w, 0);
   await p.context().close();
 });
+
+test('Back never walks through the sections: tabs replace, screens pop', async () => {
+  const p = await page(b, { mobile: true });
+  await p.goto(srv.url);
+  await p.waitForSelector('#boot', { state: 'detached' });
+  const start = await p.evaluate(() => history.length);
+  for (const label of ['Infinito', 'Niveles', 'Cuaderno', 'Diario', 'Niveles']) {
+    await p.click(`.nav button:has-text("${label}")`);
+    await p.waitForFunction((l) => document.querySelector('.nav .on')?.textContent === l, label);
+  }
+  assert.equal(await p.evaluate(() => history.length), start, 'switching sections adds no history entries');
+  // A screen opened from a section is one entry on top: its arrow returns to where it came from.
+  await p.click('.card >> nth=0');
+  await p.waitForSelector('.icon-btn[aria-label="Volver"]');
+  assert.equal(await p.evaluate(() => history.length), start + 1);
+  await p.click('.icon-btn[aria-label="Volver"]');
+  await p.waitForFunction(() => document.querySelector('.nav .on')?.textContent === 'Niveles');
+  assert.equal(await p.evaluate(() => location.hash), '#/lvl');
+  // Opened directly (no history behind it), the arrow goes to its parent instead of leaving.
+  await p.goto(`${srv.url}#/lvl/${await p.evaluate(() => 'shikaku')}`);
+  await p.reload();
+  await p.waitForSelector('.icon-btn[aria-label="Volver"]');
+  await p.click('.icon-btn[aria-label="Volver"]');
+  await p.waitForFunction(() => location.hash === '#/lvl');
+  assert.deepEqual(p.errors, []);
+  await p.context().close();
+});

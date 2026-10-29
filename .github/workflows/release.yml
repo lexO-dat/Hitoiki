@@ -135,9 +135,22 @@ jobs:
     env:
       APP_VERSION: ${{ needs.apk.outputs.version }}
     steps:
+      # Only the signing script and the public key are needed here: no project code is built or run in this job.
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/sign-web.sh
+            src/lib/ota-key.js
+          sparse-checkout-cone-mode: false
+
       - uses: actions/download-artifact@v4
         with:
           name: release-files
+
+      - name: Sign web bundle
+        env:
+          OTA_SIGNING_KEY: ${{ secrets.OTA_SIGNING_KEY }}
+        run: scripts/sign-web.sh
 
       - name: Publish release
         uses: softprops/action-gh-release@v2

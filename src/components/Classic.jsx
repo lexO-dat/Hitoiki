@@ -7,6 +7,7 @@ import { indexOf } from '../lib/indexes.js';
 import Seal from './Seal.jsx';
 import { Arrow, Back, Gear, Lock } from './Icons.jsx';
 import Thumb from './Thumb.jsx';
+import { back } from '../lib/nav.js';
 
 function Missing() {
   return (
@@ -125,7 +126,7 @@ export function ClassicList({ gameId, navigate }) {
   return (
     <div className="screen" style={{ '--c': game.main, '--cbg': game.bg }}>
       <header className="topbar">
-        <button className="icon-btn" onClick={() => navigate('/lvl')} aria-label="Volver">
+        <button className="icon-btn" onClick={() => back('/lvl')} aria-label="Volver">
           <Back />
         </button>
         <h1>{game.name}</h1>

@@ -87,7 +87,13 @@ deshacer.
   quepa en pantallas pequeñas).
 - **Actualizar desde la app**: Ajustes → Actualizaciones → Buscar. En Android descarga el paquete
   web nuevo desde GitHub Releases y lo aplica sin reinstalar; si la versión trae cambios nativos,
-  ofrece descargar el APK. En la web detecta un despliegue nuevo y recarga.
+  ofrece descargar el APK. En la web detecta un despliegue nuevo y recarga. Si hay una clave pública
+  configurada, sólo se aplican paquetes **firmados** (ver Seguridad).
+- **Botón Atrás**: cambiar de sección no apila pantallas; Atrás sale de la pantalla, luego va al Diario
+  y sólo entonces cierra la app.
+- **Paletas desbloqueables** (Ajustes → Apariencia): Washi viene de serie; Sakura, Matcha, Ai, Momiji,
+  Yozakura y Kin se ganan con sellos (día sellado, 50 niveles, semana de racha, cien respiros, Experto,
+  un mes de racha). Funcionan en claro y oscuro, y al conseguir el sello la pantalla de resultado lo avisa.
 - **Datos dañados no rompen la app**: todo lo que entra (almacenamiento, copia nativa, archivo
   importado) se valida (`src/lib/sanitize.js`): lo dañado se repara o se descarta y se cuenta, un
   tablero guardado que falla se reinicia solo, y si el guardado completo es ilegible se aparta en lugar
@@ -122,6 +128,10 @@ deshacer.
 
 - El APK publicado es de **release** (no depurable), firmado con la clave del proyecto, que vive sólo en
   los secretos del repositorio.
+- Las actualizaciones web van **firmadas** (ECDSA P-256): el paso de publicación firma versión, nivel nativo
+  y SHA-256 del paquete con una clave que sólo existe como secreto del repositorio; la app lleva la clave
+  pública (`src/lib/ota-key.js`) y rechaza cualquier paquete que no verifique, ofreciendo el APK, que
+  Android comprueba con su propia firma. Configuración: `scripts/ota-key.sh`.
 - La compilación corre sin permiso de escritura; sólo el último paso (publicar) puede crear versiones.
 - Las dependencias se vigilan (`npm audit` sin hallazgos) y Dependabot propone actualizaciones.
 - No hay cuentas, anuncios ni analítica: la única conexión es la consulta de actualizaciones a GitHub.
@@ -163,7 +173,7 @@ Identidad propia inspirada en el papel y la tinta japoneses:
 - **Hanko (判子)**: un sello bermellón se estampa sobre cada puzzle resuelto, con el kanji del juego
   (冠 Coronas, 道 Ruta, 橋 Puentes…). El día completo lleva el sello 済.
 - **Papel washi y tinta sumi**: fondos cálidos con textura de fibra, tinta casi negra y un único color
-  de acento para las recompensas; tema oscuro "de noche" con la misma paleta.
+  de acento para las recompensas; tema oscuro "de noche" con la misma paleta y seis paletas extra que se desbloquean con sellos.
 - **Colores tradicionales** por juego: sakura, fuji, matcha, ai, yamabuki, kaki, seiji…
 - Tipografías incluidas en la app: Shippori Mincho para títulos y Zen Maru Gothic para el texto. Los
   pocos kanji de la interfaz salen de un recorte de 6 KB de la fuente (`scripts/subset-kanji.py`).

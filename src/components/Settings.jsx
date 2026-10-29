@@ -6,6 +6,8 @@ import { AWAY_HOURS, ensurePermission, testNotification } from '../lib/notify.js
 import { APP_VERSION, applyUpdate, checkForUpdate } from '../lib/updates.js';
 import { exportBackup, importBackup, wipeBackups } from '../lib/backup.js';
 import { Capacitor } from '@capacitor/core';
+import { back } from '../lib/nav.js';
+import { achievements, activePalette, unlockedPalettes } from '../lib/achievements.js';
 
 const setSetting = (k, v) => store.patch((s) => ({ settings: { ...s.settings, [k]: v } }));
 
@@ -17,6 +19,12 @@ function Switch({ k, label, checked, onChange }) {
 
 export default function Settings({ navigate }) {
   const settings = useStore((s) => s.settings);
+  const palettes = useStore((s) => unlockedPalettes(s));
+  const active = useStore((s) => activePalette(s));
+  const [lockedHint, setLockedHint] = useState(null);
+  const sealOf = (id) => achievements().find((a) => a.id === id);
+  const sealName = (id) => sealOf(id)?.name ?? '';
+  const sealDesc = (id) => sealOf(id)?.desc ?? '';
   const [notice, setNotice] = useState('');
   const toggleReminders = async () => {
     if (settings.notify !== false) return setSetting('notify', false);
@@ -34,7 +42,7 @@ export default function Settings({ navigate }) {
   return (
     <div className="screen">
       <header className="topbar">
-        <button className="icon-btn" onClick={() => navigate('/')} aria-label="Volver">
+        <button className="icon-btn" onClick={() => back('/')} aria-label="Volver">
           <Back />
         </button>
         <h1>Ajustes</h1>
@@ -56,6 +64,28 @@ export default function Settings({ navigate }) {
             ))}
           </div>
         </div>
+        <div className="row palette-row">
+          <span>
+            Paleta
+            <small>Se desbloquean con sellos.</small>
+          </span>
+          <div className="palettes" role="group" aria-label="Paleta de color">
+            {palettes.map((p) => (
+              <button
+                key={p.id}
+                className={`swatch${p.unlocked ? '' : ' locked'}`}
+                data-palette={p.id}
+                aria-pressed={active === p.id}
+                aria-label={p.unlocked ? p.name : `${p.name}, bloqueada: sello ${sealName(p.seal)}`}
+                title={p.unlocked ? p.name : `Bloqueada: sello «${sealName(p.seal)}»`}
+                onClick={() => (p.unlocked ? setSetting('palette', p.id) : setLockedHint(p))}
+              >
+                <i aria-hidden="true">{p.unlocked ? p.kanji : '鎖'}</i>
+              </button>
+            ))}
+          </div>
+        </div>
+        {lockedHint && <p className="palette-hint" role="status">{lockedHint.name}: consigue el sello «{sealName(lockedHint.seal)}» — {sealDesc(lockedHint.seal)}</p>}
       </div>
       <h3 className="section">Juego</h3>
       <div className="list">

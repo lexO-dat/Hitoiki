@@ -15,7 +15,7 @@ export const STREAK_REQUIRED = 4; // puzzles per day that keep the streak alive
 
 const defaults = {
   schema: SCHEMA,
-  settings: { theme: 'system', showTimer: true, haptics: true, sound: true, music: true, volume: 0.7, notify: true },
+  settings: { theme: 'system', palette: 'washi', showTimer: true, haptics: true, sound: true, music: true, volume: 0.7, notify: true },
   results: {}, // see resultKey(): -> { time, hints, mistakes, solvedAt, solvedDay }
   saves: {}, // in-progress board state, same keys
   tutorialsSeen: {},

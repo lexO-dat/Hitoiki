@@ -1,6 +1,8 @@
 // Manual update check. On Android the web bundle (code, styles, levels) is updated in place from
 // GitHub Releases without reinstalling; only native changes need a new APK. On the web it reloads.
 import { Capacitor } from '@capacitor/core';
+import { verifyUpdate } from './ota.js';
+import { OTA_PUBLIC_KEY } from './ota-key.js';
 
 const REPO = 'lexO-dat/Hitoiki';
 export const APP_VERSION = __APP_VERSION__; // eslint-disable-line no-undef
@@ -51,6 +53,12 @@ export async function checkForUpdate() {
     // and the release notes carry it too as a fallback.
     const checksum = /^sha256:([0-9a-f]{64})$/.exec(zip?.digest ?? '')?.[1] ?? /web-sha256:\s*([0-9a-f]{64})/.exec(rel.body ?? '')?.[1];
     if (!zip || !checksum) return { status: 'native', version, notes, apkUrl: asset(/\.apk$/) };
+    // Once a public key is configured, only bundles signed by CI are applied. Anything else (a tampered or
+    // unsigned release) is never run: the player is offered the APK instead, which Android itself verifies.
+    if (OTA_PUBLIC_KEY) {
+      const signature = /web-sig:\s*([A-Za-z0-9+/=]{80,200})/.exec(rel.body ?? '')?.[1];
+      if (!(await verifyUpdate({ version, native, sha256: checksum }, signature, OTA_PUBLIC_KEY))) return { status: 'native', version, notes, apkUrl: asset(/\.apk$/), unverified: true };
+    }
     return { status: 'web', version, notes, bundleUrl: zip.browser_download_url, checksum, apkUrl: asset(/\.apk$/) };
   } catch (e) {
     return { status: 'error', message: e.message || 'Sin conexión' };

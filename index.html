@@ -19,6 +19,7 @@
         var t = JSON.parse(localStorage.getItem('logica-diaria:v1') || '{}').settings || {};
         var dark = t.theme === 'dark' || (t.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        if (/^[a-z]{2,10}$/.test(t.palette)) document.documentElement.dataset.palette = t.palette;
       } catch (e) {}
     </script>
     <style>

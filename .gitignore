@@ -5,3 +5,6 @@ __pycache__
 # Signing keys never go in the repo (CI restores it from a secret).
 *.keystore
 *.jks
+
+# OTA signing key (see scripts/ota-key.sh)
+*.pem

@@ -4,6 +4,7 @@
 // stays solved) or dropped when it is not. Pure functions: no storage, no React.
 import { toKey } from './dates.js';
 import { GAME_IDS } from '../data/ids.js';
+import { PALETTE_IDS } from '../data/palettes.js';
 
 export const MODES = ['standard', 'hard', 'expert'];
 const DIFFICULTIES = ['easy', 'medium', 'hard', 'expert'];
@@ -61,6 +62,7 @@ export function sanitizeSettings(raw, defaults) {
   const s = isObj(raw) ? raw : {};
   const out = { ...defaults };
   if (THEMES.includes(s.theme)) out.theme = s.theme;
+  if (PALETTE_IDS.includes(s.palette)) out.palette = s.palette;
   for (const k of ['showTimer', 'haptics', 'sound', 'music', 'notify', 'notifyAsked']) if (typeof s[k] === 'boolean') out[k] = s[k];
   if (finite(s.volume)) out.volume = clamp(s.volume, 0, 1);
   // Other primitive settings (older versions' keys) are kept as they are.

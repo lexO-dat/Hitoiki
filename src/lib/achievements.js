@@ -4,6 +4,7 @@
 import { GAME_IDS } from '../data/ids.js';
 import { completedOn, computeStreak, countsForDay, STREAK_REQUIRED, store } from './storage.js';
 import { memo } from './indexes.js';
+import { PALETTES } from '../data/palettes.js';
 
 export function parseKey(k) {
   const p = k.split('|');
@@ -88,3 +89,12 @@ export function initAchievements() {
   const s = store.get();
   if (!s.achievementsSeen) markAchievementsSeen(achievements(s).filter((a) => a.done).map((a) => a.id));
 }
+
+// Palettes the player can use: the free one plus those whose seal is earned.
+export function unlockedPalettes(s = store.get()) {
+  const done = new Set(achievements(s).filter((a) => a.done).map((a) => a.id));
+  return PALETTES.map((p) => ({ ...p, unlocked: !p.seal || done.has(p.seal) }));
+}
+
+// The palette actually in use: a chosen palette that is not unlocked (a restored or edited save) falls back.
+export const activePalette = (s = store.get()) => unlockedPalettes(s).find((p) => p.id === s.settings.palette && p.unlocked)?.id ?? 'washi';

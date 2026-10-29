@@ -19,9 +19,10 @@ import { sfx } from './lib/sound.js';
 import { askPermissionOnce, syncReminders } from './lib/notify.js';
 import { markAppReady } from './lib/updates.js';
 import { onRestore } from './lib/backup.js';
-import { initAchievements } from './lib/achievements.js';
+import { activePalette, initAchievements } from './lib/achievements.js';
 import { syncWidget } from './lib/widget.js';
 import { Capacitor } from '@capacitor/core';
+import { back, go, systemBack } from './lib/nav.js';
 import Nav, { TABS } from './components/Nav.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 
@@ -132,15 +133,16 @@ function ClassicPlay({ gameId, index, navigate }) {
       mode={CLASSIC_MODE[level.difficulty]}
       modeLabel={DIFFICULTY_LABEL[level.difficulty]}
       subtitle={`Nivel ${pos + 1}`}
-      onBack={() => navigate(`/lvl/${gameId}`)}
-      next={nextIdx !== undefined ? { label: 'Siguiente nivel', onClick: () => navigate(`/lvl/${gameId}/${nextIdx}`) } : undefined}
+      onBack={() => back(`/lvl/${gameId}`)}
+      next={nextIdx !== undefined ? { label: 'Siguiente nivel', onClick: () => navigate(`/lvl/${gameId}/${nextIdx}`, { replace: true }) } : undefined}
     />
   );
 }
 
 export default function App() {
   const theme = useStore((s) => s.settings.theme);
-  useApplyTheme(theme);
+  const palette = useStore((s) => activePalette(s));
+  useApplyTheme(theme, palette);
   const reminders = useStore((s) => s.settings.notify);
   const [route, setRoute] = useState(parse);
   const [dir, setDir] = useState('none');
@@ -180,8 +182,7 @@ export default function App() {
     let handle;
     import('@capacitor/app').then(({ App: NativeApp }) => {
       handle = NativeApp.addListener('backButton', () => {
-        if (parse().length) window.history.back();
-        else NativeApp.exitApp();
+        if (systemBack(!parse().length) === 'exit') NativeApp.exitApp();
       });
     });
     return () => handle?.then?.((h) => h.remove());
@@ -271,7 +272,7 @@ export default function App() {
       // A quick, clearly horizontal swipe; vertical scrolling never changes section.
       if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8 || Date.now() - s0.at > 800) return;
       const i = TABS.indexOf(tab) + (dx < 0 ? 1 : -1);
-      if (i >= 0 && i < TABS.length) window.location.hash = TABS[i];
+      if (i >= 0 && i < TABS.length) go(TABS[i], { replace: true });
     };
     window.addEventListener('touchstart', down, { passive: true });
     window.addEventListener('touchend', up, { passive: true });
@@ -281,14 +282,14 @@ export default function App() {
     };
   }, [tab]);
 
-  const navigate = (path) => {
-    window.location.hash = path;
-  };
+  const navigate = (path, opts) => go(path, opts);
+  // Moving along (next puzzle, switching section) replaces the screen instead of stacking it.
+  const sideways = (path) => go(path, { replace: true });
 
   // After a daily puzzle: straight into the next one of the day (keeps the flow going).
   const dailyNext = (d, m, g) => {
     const id = nextDaily(store.get(), d, m, g);
-    return id ? { label: `Siguiente: ${GAME_BY_ID[id].name}`, onClick: () => navigate(`/play/${d}/${m}/${id}`) } : undefined;
+    return id ? { label: `Siguiente: ${GAME_BY_ID[id].name}`, onClick: () => sideways(`/play/${d}/${m}/${id}`) } : undefined;
   };
 
   const [page, ...args] = route;
@@ -297,7 +298,7 @@ export default function App() {
     const [d, m, g] = args;
     const toToday = () => {
       setDate(today);
-      navigate('/');
+      sideways('/');
     };
     content =
       d !== today ? (
@@ -308,7 +309,7 @@ export default function App() {
           seed={dailySeed(d, m, g)}
           game={GAME_BY_ID[g]}
           mode={m}
-          onBack={() => navigate('/')}
+          onBack={() => back('/')}
           ahead={(() => {
             const nx = nextDaily(store.get(), d, m, g);
             return nx ? [{ seed: dailySeed(d, m, nx), game: nx, mode: m }] : [];
@@ -321,7 +322,7 @@ export default function App() {
               mode={m}
               modeLabel={modeLabel(m)}
               subtitle={longDate(d)}
-              onBack={() => navigate('/')}
+              onBack={() => back('/')}
               next={dailyNext(d, m, g)}
               showStreak
             />
@@ -337,7 +338,7 @@ export default function App() {
         seed={infiniteSeed(m, g, n)}
         game={GAME_BY_ID[g]}
         mode={m}
-        onBack={() => navigate('/inf')}
+        onBack={() => back('/inf')}
         ahead={[{ seed: infiniteSeed(m, g, n + 1), game: g, mode: m }]}
         render={(puzzle) => (
           <GameScreen
@@ -347,8 +348,8 @@ export default function App() {
             mode={m}
             modeLabel={modeLabel(m)}
             subtitle={`Nivel ${n}`}
-            onBack={() => navigate('/inf')}
-            next={{ label: `Nivel ${n + 1}`, onClick: () => navigate(`/inf/${m}/${g}/${n + 1}`) }}
+            onBack={() => back('/inf')}
+            next={{ label: `Nivel ${n + 1}`, onClick: () => sideways(`/inf/${m}/${g}/${n + 1}`) }}
           />
         )}
       />
@@ -382,7 +383,7 @@ export default function App() {
               <h1>Algo salió mal</h1>
               <p className="lead">Esta pantalla tuvo un problema, pero tu progreso está a salvo.</p>
               <div className="closed-actions">
-                <button className="btn primary" onClick={() => (navigate('/'), retry())}>
+                <button className="btn primary" onClick={() => (sideways('/'), retry())}>
                   Ir al inicio
                 </button>
                 <button className="btn" onClick={retry}>
@@ -395,7 +396,7 @@ export default function App() {
           {content}
         </ErrorBoundary>
       </main>
-      {tab && <Nav current={tab} navigate={navigate} />}
+      {tab && <Nav current={tab} navigate={sideways} />}
     </div>
   );
 }

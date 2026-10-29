@@ -44,7 +44,7 @@ jobs:
           . <(scripts/next-version.sh)
           echo "version=$APP_VERSION" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
